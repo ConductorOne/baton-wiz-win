@@ -14,17 +14,26 @@ func TestValidateConfig(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "valid config",
+			name: "valid config",
 			config: &WizWin{
-				// TODO: Add minimal valid configuration here once Config type is generated
+				WizApiUrl:       "https://api.wiz.io/graphql",
+				WizClientId:     "test-client-id",
+				WizClientSecret: "test-client-secret",
+				WizAuthEndpoint: "https://auth.wiz.io/oauth/token",
 			},
 			wantErr: false,
 		},
 		{
-			name:   "invalid config - missing required fields",
+			name: "invalid config - missing required fields",
 			config: &WizWin{
-				// TODO: Add configuration with missing required fields once Config type is generated
+				WizApiUrl: "https://api.wiz.io/graphql",
+				// Missing other required fields
 			},
+			wantErr: true,
+		},
+		{
+			name:    "invalid config - all fields missing",
+			config:  &WizWin{},
 			wantErr: true,
 		},
 	}
