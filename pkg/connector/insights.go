@@ -30,7 +30,7 @@ func detectAppHint(externalID string) string {
 	case strings.Contains(externalID, "projects/") && strings.Contains(externalID, "/"):
 		return "gcp"
 	default:
-		return "ß"
+		return "unkown"
 	}
 }
 
