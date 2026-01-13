@@ -154,40 +154,41 @@ func calculateBackoff(attempt int, baseDelay, maxDelay time.Duration, jitterFrac
 }
 
 // ListUsers retrieves a paginated list of users from Wiz.
+// Note: Uses userAccounts instead of users because service accounts with OAuth2
+// credentials don't have permission to query the users endpoint.
 func (c *client) ListUsers(ctx context.Context, cursor *string) (*UserConnection, error) {
 	query := `
-		query ListUsers($cursor: String) {
-			users(first: 100, after: $cursor) {
-				edges {
-					node {
-						id
-						email
-						name
-						role {
-							id
-							name
-						}
-					}
+		query ListUsers($first: Int, $after: String) {
+			userAccounts(first: $first, after: $after) {
+				nodes {
+					id
+					name
+					email
 				}
 				pageInfo {
-					hasNextPage
 					endCursor
+					hasNextPage
 				}
+				totalCount
 			}
 		}
 	`
 
-	variables := map[string]interface{}{}
+	variables := map[string]interface{}{
+		"first": 100,
+	}
 	if cursor != nil && *cursor != "" {
-		variables["cursor"] = *cursor
+		variables["after"] = *cursor
 	}
 
-	var result usersQueryResponse
+	var result struct {
+		UserAccounts UserConnection `json:"userAccounts"`
+	}
 	if err := c.graphQLRequest(ctx, query, variables, &result); err != nil {
 		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
 
-	return &result.Users, nil
+	return &result.UserAccounts, nil
 }
 
 // ListProjects retrieves a paginated list of projects from Wiz.
@@ -231,43 +232,58 @@ func (c *client) ListProjects(ctx context.Context, cursor *string) (*ProjectConn
 	return &result.Projects, nil
 }
 
-// ListUserRoles retrieves all user roles from Wiz.
+// ListUserRoles retrieves all user roles from Wiz using userRolesV2.
+// Note: userRolesV2 doesn't require specific permissions - any valid service account can query it.
 func (c *client) ListUserRoles(ctx context.Context, cursor *string) (*UserRoleConnection, error) {
 	query := `
-		query ListUserRoles($cursor: String) {
-			userRoles(first: 100, after: $cursor) {
-				edges {
-					node {
-						id
-						name
-					}
-				}
-				pageInfo {
-					hasNextPage
-					endCursor
-				}
+		query ListUserRoles($filterBy: UserRoleFilters) {
+			userRolesV2(filterBy: $filterBy) {
+				id
+				name
+				description
+				scopes
+				builtin
+				isProjectScoped
 			}
 		}
 	`
 
-	variables := map[string]interface{}{}
-	if cursor != nil && *cursor != "" {
-		variables["cursor"] = *cursor
+	variables := map[string]interface{}{
+		"filterBy": map[string]interface{}{},
 	}
 
-	var result userRolesQueryResponse
+	var result struct {
+		UserRolesV2 []UserRole `json:"userRolesV2"`
+	}
 	if err := c.graphQLRequest(ctx, query, variables, &result); err != nil {
 		return nil, fmt.Errorf("failed to list user roles: %w", err)
 	}
 
-	return &result.UserRoles, nil
+	// Convert the array response to UserRoleConnection format
+	connection := &UserRoleConnection{
+		Edges: make([]UserRoleEdge, len(result.UserRolesV2)),
+	}
+	for i, role := range result.UserRolesV2 {
+		connection.Edges[i] = UserRoleEdge{
+			Node: role,
+		}
+	}
+
+	return connection, nil
 }
 
 // ListIssues retrieves a paginated list of security issues from Wiz.
+// Only returns issues affecting USER_ACCOUNT or SERVICE_ACCOUNT entities (server-side filtered)
+// to focus on IAM-relevant security risks rather than infrastructure issues.
 func (c *client) ListIssues(ctx context.Context, cursor *string) (*IssueConnection, error) {
 	query := `
 		query ListIssues($cursor: String) {
-			issues(first: 100, after: $cursor, filterBy: {status: [OPEN, IN_PROGRESS]}) {
+			issues(first: 100, after: $cursor, filterBy: {
+				status: [OPEN, IN_PROGRESS],
+				relatedEntity: {
+					type: [USER_ACCOUNT, SERVICE_ACCOUNT]
+				}
+			}) {
 				edges {
 					node {
 						id

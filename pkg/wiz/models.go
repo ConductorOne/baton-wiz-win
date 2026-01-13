@@ -14,12 +14,12 @@ type UserRoleRef struct {
 	Name string `json:"name"`
 }
 
-// User represents a Wiz user.
+// User represents a Wiz user (from userAccounts query).
 type User struct {
-	ID    string      `json:"id"`
-	Email string      `json:"email"`
-	Name  string      `json:"name"`
-	Role  UserRoleRef `json:"role"`
+	ID            string      `json:"id"`
+	Email         string      `json:"email"`
+	Name          string      `json:"name"`
+	EffectiveRole UserRoleRef `json:"effectiveRole"`
 }
 
 // UserEdge represents an edge in the user connection.
@@ -29,14 +29,19 @@ type UserEdge struct {
 
 // UserConnection represents a paginated list of users.
 type UserConnection struct {
-	Edges    []UserEdge `json:"edges"`
-	PageInfo PageInfo   `json:"pageInfo"`
+	Nodes      []User   `json:"nodes"`
+	PageInfo   PageInfo `json:"pageInfo"`
+	TotalCount int      `json:"totalCount"`
 }
 
 // UserRole represents a Wiz role/permission level.
 type UserRole struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID              string   `json:"id"`
+	Name            string   `json:"name"`
+	Description     string   `json:"description"`
+	Scopes          []string `json:"scopes"`
+	Builtin         bool     `json:"builtin"`
+	IsProjectScoped bool     `json:"isProjectScoped"`
 }
 
 // UserRoleEdge represents an edge in the user role connection.

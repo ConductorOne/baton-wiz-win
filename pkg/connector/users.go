@@ -33,18 +33,24 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		return nil, nil, fmt.Errorf("wiz-connector: failed to list users: %w", err)
 	}
 
-	for _, edge := range resp.Edges {
-		user := edge.Node
+	for _, user := range resp.Nodes {
+		// Skip users without email addresses (can't use them as resource IDs)
+		if user.Email == "" {
+			continue
+		}
 
+		// Use email as the resource ID instead of the Wiz user ID because:
+		// - userAccounts and users endpoints return different IDs for the same person
+		// - Email is consistent across all Wiz API endpoints
+		// - Project grants reference users by email
 		userResource, err := resource.NewUserResource(
 			user.Email,
 			userResourceType,
-			user.ID,
+			user.Email, // Use email as ID for consistency
 			[]resource.UserTraitOption{
 				resource.WithEmail(user.Email, true),
 				resource.WithStatus(v2.UserTrait_Status_STATUS_ENABLED),
 			},
-			resource.WithDescription(fmt.Sprintf("Wiz user with role: %s (%s)", user.Role.Name, user.Role.ID)),
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("wiz-connector: failed to create user resource: %w", err)

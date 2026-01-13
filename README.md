@@ -70,20 +70,25 @@ baton resources
 - **Projects**: Wiz projects/workspaces with membership entitlements
 
 ## Security Resources
-- **Security Insights**: Wiz security issues and findings mapped to external cloud resources (AWS, Azure, GCP)
+- **Security Insights**: Wiz security issues and findings related to user and service account principals
+  - **Server-side filtered for IAM relevance**: Only syncs issues affecting `USER_ACCOUNT` and `SERVICE_ACCOUNT` entities (~14% of total Wiz issues)
+  - Infrastructure issues (VPCs, buckets, regions, etc.) are automatically excluded by the API query to focus on identity-related security risks
   - Uses the `SecurityInsightTrait` to link Wiz issues to resources from other connectors
   - Includes severity, status, issue type, and affected resource information
-  - Automatically detects cloud provider (AWS/Azure/GCP) from resource external IDs
+  - Automatically detects cloud provider (AWS/Azure/GCP) from resource external IDs (e.g., AWS ARNs)
   - Enables correlation of security findings with IAM access patterns in ConductorOne
 
 ## How Security Insights Work
 
 Security Insights in this connector leverage the Baton SDK's `SecurityInsightTrait` to map Wiz findings to external cloud resources:
 
-1. **Issue Discovery**: The connector fetches security issues from Wiz (vulnerabilities, misconfigurations, compliance violations)
-2. **External Resource Mapping**: Each issue references a cloud resource via its external ID (e.g., AWS ARN, Azure Resource ID)
-3. **Uplift Integration**: ConductorOne's Uplift system matches these external IDs to resources synced from other connectors (baton-aws, baton-azure, etc.)
-4. **Unified View**: Security findings are displayed alongside IAM entitlements, enabling security teams to understand both "who has access" and "what risks exist"
+1. **Issue Discovery**: The connector fetches security issues from Wiz (vulnerabilities, misconfigurations, compliance violations) using GraphQL queries with server-side filtering
+2. **IAM Filtering**: The API query includes `relatedEntity: { type: [USER_ACCOUNT, SERVICE_ACCOUNT] }` to only return principal-related issues, reducing data transfer by ~86%
+3. **External Resource Mapping**: Each issue references a cloud resource via its external ID (e.g., AWS ARN like `arn:aws:iam::123456789012:user/john.doe`)
+4. **Uplift Integration**: ConductorOne's Uplift system matches these external IDs to resources synced from other connectors (baton-aws, baton-azure, etc.)
+5. **Unified View**: Security findings are displayed alongside IAM entitlements, enabling security teams to understand both "who has access" and "what risks exist" for each principal
+
+**Performance Note**: Server-side filtering ensures only IAM-relevant issues are synced, reducing bandwidth and sync time significantly compared to fetching all infrastructure issues.
 
 `baton-wiz-win` does not currently support account provisioning or entitlement provisioning.
 

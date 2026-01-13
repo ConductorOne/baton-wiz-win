@@ -54,8 +54,9 @@ func (i *insightBuilder) List(ctx context.Context, parentResourceID *v2.Resource
 	for _, edge := range resp.Edges {
 		issue := edge.Node
 
-		// Skip issues without external IDs
-		if issue.EntitySnapshot.ExternalID == "" {
+		// Skip issues without external IDs or issue IDs
+		// Note: Server-side filtering already ensures we only get USER_ACCOUNT and SERVICE_ACCOUNT issues
+		if issue.EntitySnapshot.ExternalID == "" || issue.ID == "" {
 			continue
 		}
 

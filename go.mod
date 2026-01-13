@@ -7,6 +7,7 @@ require (
 	github.com/ennyjfrick/ruleguard-logfatal v0.0.2
 	github.com/quasilyte/go-ruleguard/dsl v0.3.23
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/oauth2 v0.26.0
 )
 
 require (
@@ -105,7 +106,6 @@ require (
 	golang.org/x/crypto v0.34.0 // indirect
 	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c // indirect
 	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/oauth2 v0.26.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/term v0.29.0 // indirect

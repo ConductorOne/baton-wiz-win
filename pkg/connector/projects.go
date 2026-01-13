@@ -107,8 +107,12 @@ func (p *projectBuilder) Grants(ctx context.Context, res *v2.Resource, attr reso
 		}
 
 		// Create grants for project owners
+		// Use email as the user ID to match how we sync users (email is consistent across endpoints)
 		for _, owner := range project.ProjectOwners {
-			userResource, err := resource.NewResourceID(userResourceType, owner.ID)
+			if owner.Email == "" {
+				continue // Skip if no email
+			}
+			userResource, err := resource.NewResourceID(userResourceType, owner.Email)
 			if err != nil {
 				return nil, nil, fmt.Errorf("wiz-connector: failed to create user resource ID for owner: %w", err)
 			}
@@ -123,7 +127,10 @@ func (p *projectBuilder) Grants(ctx context.Context, res *v2.Resource, attr reso
 
 		// Create grants for security champions
 		for _, champion := range project.SecurityChampions {
-			userResource, err := resource.NewResourceID(userResourceType, champion.ID)
+			if champion.Email == "" {
+				continue // Skip if no email
+			}
+			userResource, err := resource.NewResourceID(userResourceType, champion.Email)
 			if err != nil {
 				return nil, nil, fmt.Errorf("wiz-connector: failed to create user resource ID for champion: %w", err)
 			}

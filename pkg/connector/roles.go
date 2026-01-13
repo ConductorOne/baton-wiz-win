@@ -6,7 +6,6 @@ import (
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
-	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
 )
@@ -78,53 +77,24 @@ func (r *roleBuilder) Entitlements(ctx context.Context, res *v2.Resource, _ reso
 	return entitlements, nil, nil
 }
 
-// Grants returns grants for users who have this role, one page at a time.
-// In Wiz, role assignments are typically associated with users directly,
-// so we fetch users and check their roles.
+// Grants returns grants for users who have this role.
+// NOTE: This is currently non-functional because:
+// - The 'users' endpoint (which has effectiveRole) requires user session auth
+// - Service accounts can only access 'userAccounts' which lacks role information
+// - There is no API endpoint to query users by role
+// This is a fundamental limitation of the Wiz API for service account authentication.
 func (r *roleBuilder) Grants(ctx context.Context, res *v2.Resource, attr resource.SyncOpAttrs) ([]*v2.Grant, *resource.SyncOpResults, error) {
-	var grants []*v2.Grant
-
-	// Get the page token from the sync attributes
-	var cursor *string
-	if attr.PageToken.Token != "" {
-		cursor = &attr.PageToken.Token
-	}
-
-	roleID := res.Id.Resource
-
-	// Fetch one page of users
-	resp, err := r.client.ListUsers(ctx, cursor)
-	if err != nil {
-		return nil, nil, fmt.Errorf("wiz-connector: failed to list users for role grants: %w", err)
-	}
-
-	for _, edge := range resp.Edges {
-		user := edge.Node
-
-		// Check if user has this role
-		if user.Role.ID == roleID || user.Role.Name == res.DisplayName {
-			userResource, err := resource.NewResourceID(userResourceType, user.ID)
-			if err != nil {
-				return nil, nil, fmt.Errorf("wiz-connector: failed to create user resource ID: %w", err)
-			}
-
-			g := grant.NewGrant(
-				res,
-				"member",
-				userResource,
-			)
-
-			grants = append(grants, g)
-		}
-	}
-
-	// Prepare the sync results with next page token if there are more pages
-	syncResults := &resource.SyncOpResults{}
-	if resp.PageInfo.HasNextPage {
-		syncResults.NextPageToken = resp.PageInfo.EndCursor
-	}
-
-	return grants, syncResults, nil
+	// Cannot determine user-to-role mappings without access to the 'users' endpoint
+	// which requires user session authentication (not available to service accounts).
+	//
+	// Alternative endpoints tested:
+	// - userAccounts: no effectiveRole field
+	// - directoryUsers: no effectiveRole field
+	// - userRolesV2: no assignedUsers field
+	//
+	// TODO: Once Wiz provides API access to user-role mappings for service accounts,
+	// implement the grants logic here.
+	return nil, nil, nil
 }
 
 func newRoleBuilder(client wiz.Client) *roleBuilder {
