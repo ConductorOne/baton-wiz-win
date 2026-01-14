@@ -14,12 +14,19 @@ type UserRoleRef struct {
 	Name string `json:"name"`
 }
 
-// User represents a Wiz user (from userAccounts query).
+// ProjectRef represents a reference to a project assigned to a user.
+type ProjectRef struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// User represents a Wiz user (from users query).
 type User struct {
-	ID            string      `json:"id"`
-	Email         string      `json:"email"`
-	Name          string      `json:"name"`
-	EffectiveRole UserRoleRef `json:"effectiveRole"`
+	ID                       string       `json:"id"`
+	Email                    string       `json:"email"`
+	Name                     string       `json:"name"`
+	EffectiveRole            UserRoleRef  `json:"effectiveRole"`
+	EffectiveAssignedProjects []ProjectRef `json:"effectiveAssignedProjects"`
 }
 
 // UserEdge represents an edge in the user connection.

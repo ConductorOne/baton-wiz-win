@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
 )
@@ -73,10 +74,61 @@ func (u *userBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ r
 	return nil, nil, nil
 }
 
-// Grants returns an empty slice for users. Role and project memberships are handled
-// by the role and project builders.
-func (u *userBuilder) Grants(ctx context.Context, resource *v2.Resource, attr resource.SyncOpAttrs) ([]*v2.Grant, *resource.SyncOpResults, error) {
-	return nil, nil, nil
+// Grants returns grants for projects this user is a member of.
+// This uses the effectiveAssignedProjects field from the users query.
+func (u *userBuilder) Grants(ctx context.Context, res *v2.Resource, attr resource.SyncOpAttrs) ([]*v2.Grant, *resource.SyncOpResults, error) {
+	var grants []*v2.Grant
+
+	// Get the page token from the sync attributes
+	var cursor *string
+	if attr.PageToken.Token != "" {
+		cursor = &attr.PageToken.Token
+	}
+
+	userEmail := res.Id.Resource
+
+	// Fetch users to find the specific user and their project assignments
+	resp, err := u.client.ListUsers(ctx, cursor)
+	if err != nil {
+		return nil, nil, fmt.Errorf("wiz-connector: failed to list users for project grants: %w", err)
+	}
+
+	// Find the specific user we're getting grants for
+	for _, user := range resp.Nodes {
+		if user.Email != userEmail {
+			continue
+		}
+
+		// Create grants for each project the user is assigned to
+		for _, project := range user.EffectiveAssignedProjects {
+			// Create the project resource for the grant
+			projectRes, err := resource.NewGroupResource(
+				project.Name,
+				projectResourceType,
+				project.ID,
+				[]resource.GroupTraitOption{},
+			)
+			if err != nil {
+				return nil, nil, fmt.Errorf("wiz-connector: failed to create project resource: %w", err)
+			}
+
+			// Create a grant for this user to the project's "member" entitlement
+			userGrant := grant.NewGrant(projectRes, "member", res.Id)
+
+			grants = append(grants, userGrant)
+		}
+
+		// Found the user, no need to continue
+		break
+	}
+
+	// Prepare the sync results with next page token if there are more pages
+	syncResults := &resource.SyncOpResults{}
+	if resp.PageInfo.HasNextPage {
+		syncResults.NextPageToken = resp.PageInfo.EndCursor
+	}
+
+	return grants, syncResults, nil
 }
 
 func newUserBuilder(client wiz.Client) *userBuilder {

@@ -140,30 +140,37 @@ func (c *client) graphQLRequest(ctx context.Context, query string, variables map
 func calculateBackoff(attempt int, baseDelay, maxDelay time.Duration, jitterFraction float64) time.Duration {
 	// Calculate exponential backoff: baseDelay * 2^attempt
 	backoff := float64(baseDelay) * math.Pow(2, float64(attempt))
-	
+
 	// Cap at maxDelay
 	if backoff > float64(maxDelay) {
 		backoff = float64(maxDelay)
 	}
-	
+
 	// Add jitter: random value between [backoff * (1-jitterFraction), backoff * (1+jitterFraction)]
 	jitter := backoff * jitterFraction * (2*rand.Float64() - 1)
 	backoff += jitter
-	
+
 	return time.Duration(backoff)
 }
 
 // ListUsers retrieves a paginated list of users from Wiz.
-// Note: Uses userAccounts instead of users because service accounts with OAuth2
-// credentials don't have permission to query the users endpoint.
+// Note: Uses users endpoint which requires read:users permission and includes role and project information.
 func (c *client) ListUsers(ctx context.Context, cursor *string) (*UserConnection, error) {
 	query := `
 		query ListUsers($first: Int, $after: String) {
-			userAccounts(first: $first, after: $after) {
+			users(first: $first, after: $after) {
 				nodes {
 					id
 					name
 					email
+					effectiveRole {
+						id
+						name
+					}
+					effectiveAssignedProjects {
+						id
+						name
+					}
 				}
 				pageInfo {
 					endCursor
@@ -182,13 +189,13 @@ func (c *client) ListUsers(ctx context.Context, cursor *string) (*UserConnection
 	}
 
 	var result struct {
-		UserAccounts UserConnection `json:"userAccounts"`
+		Users UserConnection `json:"users"`
 	}
 	if err := c.graphQLRequest(ctx, query, variables, &result); err != nil {
 		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
 
-	return &result.UserAccounts, nil
+	return &result.Users, nil
 }
 
 // ListProjects retrieves a paginated list of projects from Wiz.
@@ -323,4 +330,3 @@ func (c *client) ListIssues(ctx context.Context, cursor *string) (*IssueConnecti
 
 	return &result.Issues, nil
 }
-

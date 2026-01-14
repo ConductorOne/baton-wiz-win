@@ -61,19 +61,38 @@ func (p *projectBuilder) List(ctx context.Context, parentResourceID *v2.Resource
 	return projects, syncResults, nil
 }
 
-// Entitlements returns a "member" entitlement for each project.
+// Entitlements returns "owner", "champion", and "member" entitlements for each project.
 func (p *projectBuilder) Entitlements(ctx context.Context, res *v2.Resource, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
 	var entitlements []*v2.Entitlement
 
-	// Create a "member" entitlement for the project
+	// Create an "owner" entitlement for project owners
+	ownerEntitlement := entitlement.NewAssignmentEntitlement(
+		res,
+		"owner",
+		entitlement.WithGrantableTo(userResourceType),
+		entitlement.WithDisplayName(fmt.Sprintf("%s Project Owner", res.DisplayName)),
+		entitlement.WithDescription(fmt.Sprintf("Owner of %s project with full administrative access", res.DisplayName)),
+	)
+	entitlements = append(entitlements, ownerEntitlement)
+
+	// Create a "champion" entitlement for security champions
+	championEntitlement := entitlement.NewAssignmentEntitlement(
+		res,
+		"champion",
+		entitlement.WithGrantableTo(userResourceType),
+		entitlement.WithDisplayName(fmt.Sprintf("%s Security Champion", res.DisplayName)),
+		entitlement.WithDescription(fmt.Sprintf("Security champion for %s project", res.DisplayName)),
+	)
+	entitlements = append(entitlements, championEntitlement)
+
+	// Create a "member" entitlement for general project members
 	memberEntitlement := entitlement.NewAssignmentEntitlement(
 		res,
 		"member",
 		entitlement.WithGrantableTo(userResourceType),
 		entitlement.WithDisplayName(fmt.Sprintf("%s Project Member", res.DisplayName)),
-		entitlement.WithDescription(fmt.Sprintf("Membership in %s project", res.DisplayName)),
+		entitlement.WithDescription(fmt.Sprintf("General member of %s project", res.DisplayName)),
 	)
-
 	entitlements = append(entitlements, memberEntitlement)
 
 	return entitlements, nil, nil
@@ -106,7 +125,7 @@ func (p *projectBuilder) Grants(ctx context.Context, res *v2.Resource, attr reso
 			continue
 		}
 
-		// Create grants for project owners
+		// Create grants for project owners with "owner" entitlement
 		// Use email as the user ID to match how we sync users (email is consistent across endpoints)
 		for _, owner := range project.ProjectOwners {
 			if owner.Email == "" {
@@ -119,13 +138,13 @@ func (p *projectBuilder) Grants(ctx context.Context, res *v2.Resource, attr reso
 
 			g := grant.NewGrant(
 				res,
-				"member",
+				"owner",
 				userResource,
 			)
 			grants = append(grants, g)
 		}
 
-		// Create grants for security champions
+		// Create grants for security champions with "champion" entitlement
 		for _, champion := range project.SecurityChampions {
 			if champion.Email == "" {
 				continue // Skip if no email
@@ -137,7 +156,7 @@ func (p *projectBuilder) Grants(ctx context.Context, res *v2.Resource, attr reso
 
 			g := grant.NewGrant(
 				res,
-				"member",
+				"champion",
 				userResource,
 			)
 			grants = append(grants, g)
