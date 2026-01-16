@@ -22,10 +22,10 @@ type ProjectRef struct {
 
 // User represents a Wiz user (from users query).
 type User struct {
-	ID                       string       `json:"id"`
-	Email                    string       `json:"email"`
-	Name                     string       `json:"name"`
-	EffectiveRole            UserRoleRef  `json:"effectiveRole"`
+	ID                        string       `json:"id"`
+	Email                     string       `json:"email"`
+	Name                      string       `json:"name"`
+	EffectiveRole             UserRoleRef  `json:"effectiveRole"`
 	EffectiveAssignedProjects []ProjectRef `json:"effectiveAssignedProjects"`
 }
 
@@ -36,9 +36,8 @@ type UserEdge struct {
 
 // UserConnection represents a paginated list of users.
 type UserConnection struct {
-	Nodes      []User   `json:"nodes"`
-	PageInfo   PageInfo `json:"pageInfo"`
-	TotalCount int      `json:"totalCount"`
+	Nodes    []User   `json:"nodes"`
+	PageInfo PageInfo `json:"pageInfo"`
 }
 
 // UserRole represents a Wiz role/permission level.
@@ -76,11 +75,11 @@ type SecurityChampion struct {
 
 // Project represents a Wiz project/workspace.
 type Project struct {
-	ID                 string             `json:"id"`
-	Name               string             `json:"name"`
-	Description        string             `json:"description"`
-	ProjectOwners      []ProjectOwner     `json:"projectOwners"`
-	SecurityChampions  []SecurityChampion `json:"securityChampions"`
+	ID                string             `json:"id"`
+	Name              string             `json:"name"`
+	Description       string             `json:"description"`
+	ProjectOwners     []ProjectOwner     `json:"projectOwners"`
+	SecurityChampions []SecurityChampion `json:"securityChampions"`
 }
 
 // ProjectEdge represents an edge in the project connection.
@@ -132,12 +131,12 @@ type IssueConnection struct {
 
 // GraphQL response wrapper types
 type graphQLResponse struct {
-	Data   interface{}     `json:"data"`
-	Errors []graphQLError  `json:"errors,omitempty"`
+	Data   interface{}    `json:"data"`
+	Errors []graphQLError `json:"errors,omitempty"`
 }
 
 type graphQLError struct {
-	Message string `json:"message"`
+	Message string        `json:"message"`
 	Path    []interface{} `json:"path,omitempty"`
 }
 
@@ -157,4 +156,3 @@ type issuesQueryResponse struct {
 type userRolesQueryResponse struct {
 	UserRoles UserRoleConnection `json:"userRoles"`
 }
-

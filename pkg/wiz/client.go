@@ -1,18 +1,16 @@
 package wiz
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"math"
-	"math/rand"
 	"net/http"
-	"time"
+	"net/url"
 
+	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Client defines the interface for interacting with the Wiz API.
@@ -25,8 +23,8 @@ type Client interface {
 
 // client implements the Client interface.
 type client struct {
-	httpClient *http.Client
-	apiURL     string
+	wrapper *uhttp.BaseHttpClient
+	apiURL  string
 }
 
 // NewClient creates a new Wiz API client with OAuth2 authentication.
@@ -50,107 +48,50 @@ func NewClient(ctx context.Context, apiURL, clientID, clientSecret, authEndpoint
 	// Create an HTTP client that automatically handles token management
 	httpClient := config.Client(ctx)
 
+	// Wrap with baton-sdk's HTTP client wrapper for proper error handling and retries
+	wrapper := uhttp.NewBaseHttpClient(httpClient)
+
 	return &client{
-		httpClient: httpClient,
-		apiURL:     apiURL,
+		wrapper: wrapper,
+		apiURL:  apiURL,
 	}, nil
 }
 
-// graphQLRequest makes a GraphQL request to the Wiz API with retry logic for rate limits.
+// graphQLRequest makes a GraphQL request to the Wiz API using baton-sdk's HTTP wrapper.
+// The wrapper handles retries, rate limiting, and error wrapping automatically.
 func (c *client) graphQLRequest(ctx context.Context, query string, variables map[string]interface{}, result interface{}) error {
-	const (
-		maxRetries     = 5
-		baseDelay      = 1 * time.Second
-		maxDelay       = 32 * time.Second
-		jitterFraction = 0.1
-	)
-
 	requestBody := map[string]interface{}{
 		"query":     query,
 		"variables": variables,
 	}
 
-	jsonBody, err := json.Marshal(requestBody)
+	// Parse the API URL
+	parsedURL, err := url.Parse(c.apiURL)
 	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
+		return fmt.Errorf("failed to parse API URL: %w", err)
 	}
 
-	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		// Create a new request for each attempt
-		req, err := http.NewRequestWithContext(ctx, "POST", c.apiURL, bytes.NewBuffer(jsonBody))
-		if err != nil {
-			return fmt.Errorf("failed to create request: %w", err)
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			lastErr = fmt.Errorf("failed to execute request: %w", err)
-			// Network errors should be retried
-			if attempt < maxRetries {
-				time.Sleep(calculateBackoff(attempt, baseDelay, maxDelay, jitterFraction))
-				continue
-			}
-			return lastErr
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return fmt.Errorf("failed to read response body: %w", err)
-		}
-
-		// Handle rate limiting with retry
-		if resp.StatusCode == http.StatusTooManyRequests {
-			lastErr = fmt.Errorf("rate limited (429)")
-			if attempt < maxRetries {
-				delay := calculateBackoff(attempt, baseDelay, maxDelay, jitterFraction)
-				time.Sleep(delay)
-				continue
-			}
-			return fmt.Errorf("rate limit exceeded after %d retries: %s", maxRetries, string(body))
-		}
-
-		// Handle other non-200 status codes
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(body))
-		}
-
-		// Parse the response
-		var gqlResp graphQLResponse
-		gqlResp.Data = result
-
-		if err := json.Unmarshal(body, &gqlResp); err != nil {
-			return fmt.Errorf("failed to unmarshal response: %w", err)
-		}
-
-		if len(gqlResp.Errors) > 0 {
-			return fmt.Errorf("graphql errors: %+v", gqlResp.Errors)
-		}
-
-		return nil
+	req, err := c.wrapper.NewRequest(ctx, http.MethodPost, parsedURL, uhttp.WithJSONBody(requestBody))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	return lastErr
-}
+	// Use a temporary struct to capture the GraphQL response envelope
+	var gqlResp graphQLResponse
+	gqlResp.Data = result
 
-// calculateBackoff computes exponential backoff with jitter.
-func calculateBackoff(attempt int, baseDelay, maxDelay time.Duration, jitterFraction float64) time.Duration {
-	// Calculate exponential backoff: baseDelay * 2^attempt
-	backoff := float64(baseDelay) * math.Pow(2, float64(attempt))
-
-	// Cap at maxDelay
-	if backoff > float64(maxDelay) {
-		backoff = float64(maxDelay)
+	// Execute the request with JSON response handling
+	_, err = c.wrapper.Do(req, uhttp.WithJSONResponse(&gqlResp))
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
 	}
 
-	// Add jitter: random value between [backoff * (1-jitterFraction), backoff * (1+jitterFraction)]
-	jitter := backoff * jitterFraction * (2*rand.Float64() - 1)
-	backoff += jitter
+	// Check for GraphQL-specific errors in the response
+	if len(gqlResp.Errors) > 0 {
+		return status.Errorf(codes.Unknown, "graphql errors: %+v", gqlResp.Errors)
+	}
 
-	return time.Duration(backoff)
+	return nil
 }
 
 // ListUsers retrieves a paginated list of users from Wiz.
@@ -176,7 +117,6 @@ func (c *client) ListUsers(ctx context.Context, cursor *string) (*UserConnection
 					endCursor
 					hasNextPage
 				}
-				totalCount
 			}
 		}
 	`
