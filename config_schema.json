@@ -59,9 +59,54 @@
       "boolField": {}
     },
     {
-      "name": "configField",
-      "stringField": {}
+      "name": "wiz-api-url",
+      "displayName": "Wiz API URL",
+      "description": "The Wiz GraphQL API endpoint for your region",
+      "placeholder": "https://api.us17.app.wiz.io/graphql",
+      "isRequired": true,
+      "stringField": {
+        "rules": {
+          "isRequired": true
+        }
+      }
+    },
+    {
+      "name": "wiz-client-id",
+      "displayName": "Client ID",
+      "description": "OAuth2 client ID from your Wiz service account",
+      "isRequired": true,
+      "stringField": {
+        "rules": {
+          "isRequired": true
+        }
+      }
+    },
+    {
+      "name": "wiz-client-secret",
+      "displayName": "Client Secret",
+      "description": "OAuth2 client secret from your Wiz service account",
+      "isRequired": true,
+      "isSecret": true,
+      "stringField": {
+        "rules": {
+          "isRequired": true
+        }
+      }
+    },
+    {
+      "name": "wiz-auth-endpoint",
+      "displayName": "Auth Endpoint",
+      "description": "OAuth2 token endpoint for authentication",
+      "placeholder": "https://auth.app.wiz.io/oauth/token",
+      "isRequired": true,
+      "stringField": {
+        "rules": {
+          "isRequired": true
+        }
+      }
     }
   ],
-  "displayName": "Wiz Win"
+  "displayName": "Wiz",
+  "helpUrl": "https://docs.conductorone.com/integrations/wiz",
+  "iconUrl": "https://raw.githubusercontent.com/ConductorOne/baton-wiz-win/main/baton-logo.png"
 }
