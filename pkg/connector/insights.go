@@ -30,7 +30,7 @@ func detectAppHint(externalID string) string {
 	case strings.Contains(externalID, "projects/") && strings.Contains(externalID, "/"):
 		return "gcp"
 	default:
-		return "unkown"
+		return "unknown"
 	}
 }
 
@@ -51,9 +51,7 @@ func (i *insightBuilder) List(ctx context.Context, parentResourceID *v2.Resource
 		return nil, nil, fmt.Errorf("wiz-connector: failed to list issues: %w", err)
 	}
 
-	for _, edge := range resp.Edges {
-		issue := edge.Node
-
+	for _, issue := range resp.Nodes {
 		// Skip issues without external IDs or issue IDs
 		// Note: Server-side filtering already ensures we only get USER_ACCOUNT and SERVICE_ACCOUNT issues
 		if issue.EntitySnapshot.ExternalID == "" || issue.ID == "" {

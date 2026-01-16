@@ -143,19 +143,17 @@ func (c *client) ListProjects(ctx context.Context, cursor *string) (*ProjectConn
 	query := `
 		query ListProjects($cursor: String) {
 			projects(first: 100, after: $cursor) {
-				edges {
-					node {
+				nodes {
+					id
+					name
+					description
+					projectOwners {
 						id
-						name
-						description
-						projectOwners {
-							id
-							email
-						}
-						securityChampions {
-							id
-							email
-						}
+						email
+					}
+					securityChampions {
+						id
+						email
 					}
 				}
 				pageInfo {
@@ -207,13 +205,9 @@ func (c *client) ListUserRoles(ctx context.Context, cursor *string) (*UserRoleCo
 	}
 
 	// Convert the array response to UserRoleConnection format
+	// Note: userRolesV2 returns a plain array, not a Relay connection
 	connection := &UserRoleConnection{
-		Edges: make([]UserRoleEdge, len(result.UserRolesV2)),
-	}
-	for i, role := range result.UserRolesV2 {
-		connection.Edges[i] = UserRoleEdge{
-			Node: role,
-		}
+		Nodes: result.UserRolesV2,
 	}
 
 	return connection, nil
@@ -231,23 +225,21 @@ func (c *client) ListIssues(ctx context.Context, cursor *string) (*IssueConnecti
 					type: [USER_ACCOUNT, SERVICE_ACCOUNT]
 				}
 			}) {
-				edges {
-					node {
+				nodes {
+					id
+					type
+					severity
+					status
+					createdAt
+					sourceRule {
+						name
+					}
+					entitySnapshot {
 						id
+						externalId
+						cloudPlatform
 						type
-						severity
-						status
-						createdAt
-						sourceRule {
-							name
-						}
-						entitySnapshot {
-							id
-							externalId
-							cloudPlatform
-							type
-							name
-						}
+						name
 					}
 				}
 				pageInfo {

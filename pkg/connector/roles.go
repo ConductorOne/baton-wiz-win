@@ -6,7 +6,6 @@ import (
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
-	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
 )
@@ -35,9 +34,7 @@ func (r *roleBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		return nil, nil, fmt.Errorf("wiz-connector: failed to list roles: %w", err)
 	}
 
-	for _, edge := range resp.Edges {
-		role := edge.Node
-
+	for _, role := range resp.Nodes {
 		roleResource, err := resource.NewRoleResource(
 			role.Name,
 			roleResourceType,
@@ -79,51 +76,10 @@ func (r *roleBuilder) Entitlements(ctx context.Context, res *v2.Resource, _ reso
 }
 
 // Grants returns grants for users who have this role.
-// Now functional because we can access the 'users' endpoint with effectiveRole data.
+// Role grants are now emitted from the user resource type to avoid querying all users for each role.
+// See users.go Grants() method.
 func (r *roleBuilder) Grants(ctx context.Context, res *v2.Resource, attr resource.SyncOpAttrs) ([]*v2.Grant, *resource.SyncOpResults, error) {
-	var grants []*v2.Grant
-
-	// Get the page token from the sync attributes
-	var cursor *string
-	if attr.PageToken.Token != "" {
-		cursor = &attr.PageToken.Token
-	}
-
-	// Fetch users to find those with this role
-	resp, err := r.client.ListUsers(ctx, cursor)
-	if err != nil {
-		return nil, nil, fmt.Errorf("wiz-connector: failed to list users for role grants: %w", err)
-	}
-
-	// Filter users who have this role as their effective role
-	for _, user := range resp.Nodes {
-		// Skip users without email addresses
-		if user.Email == "" {
-			continue
-		}
-
-		// Check if this user has the current role
-		if user.EffectiveRole.ID == res.Id.Resource {
-			// Create a user resource ID for the grant
-			userResourceID := &v2.ResourceId{
-				ResourceType: userResourceType.Id,
-				Resource:     user.Email,
-			}
-
-			// Create a grant for this user to the role's "member" entitlement
-			userGrant := grant.NewGrant(res, "member", userResourceID)
-
-			grants = append(grants, userGrant)
-		}
-	}
-
-	// Prepare the sync results with next page token if there are more pages
-	syncResults := &resource.SyncOpResults{}
-	if resp.PageInfo.HasNextPage {
-		syncResults.NextPageToken = resp.PageInfo.EndCursor
-	}
-
-	return grants, syncResults, nil
+	return nil, nil, nil
 }
 
 func newRoleBuilder(client wiz.Client) *roleBuilder {

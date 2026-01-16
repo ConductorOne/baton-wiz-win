@@ -29,11 +29,6 @@ type User struct {
 	EffectiveAssignedProjects []ProjectRef `json:"effectiveAssignedProjects"`
 }
 
-// UserEdge represents an edge in the user connection.
-type UserEdge struct {
-	Node User `json:"node"`
-}
-
 // UserConnection represents a paginated list of users.
 type UserConnection struct {
 	Nodes    []User   `json:"nodes"`
@@ -50,15 +45,10 @@ type UserRole struct {
 	IsProjectScoped bool     `json:"isProjectScoped"`
 }
 
-// UserRoleEdge represents an edge in the user role connection.
-type UserRoleEdge struct {
-	Node UserRole `json:"node"`
-}
-
 // UserRoleConnection represents a paginated list of user roles.
 type UserRoleConnection struct {
-	Edges    []UserRoleEdge `json:"edges"`
-	PageInfo PageInfo       `json:"pageInfo"`
+	Nodes    []UserRole `json:"nodes"`
+	PageInfo PageInfo   `json:"pageInfo"`
 }
 
 // ProjectOwner represents an owner of a project.
@@ -82,15 +72,10 @@ type Project struct {
 	SecurityChampions []SecurityChampion `json:"securityChampions"`
 }
 
-// ProjectEdge represents an edge in the project connection.
-type ProjectEdge struct {
-	Node Project `json:"node"`
-}
-
 // ProjectConnection represents a paginated list of projects.
 type ProjectConnection struct {
-	Edges    []ProjectEdge `json:"edges"`
-	PageInfo PageInfo      `json:"pageInfo"`
+	Nodes    []Project `json:"nodes"`
+	PageInfo PageInfo  `json:"pageInfo"`
 }
 
 // SourceRule represents the rule that triggered an issue.
@@ -118,15 +103,10 @@ type Issue struct {
 	EntitySnapshot EntitySnapshot `json:"entitySnapshot"`
 }
 
-// IssueEdge represents an edge in the issue connection.
-type IssueEdge struct {
-	Node Issue `json:"node"`
-}
-
 // IssueConnection represents a paginated list of issues.
 type IssueConnection struct {
-	Edges    []IssueEdge `json:"edges"`
-	PageInfo PageInfo    `json:"pageInfo"`
+	Nodes    []Issue  `json:"nodes"`
+	PageInfo PageInfo `json:"pageInfo"`
 }
 
 // GraphQL response wrapper types

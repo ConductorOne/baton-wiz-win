@@ -40,6 +40,21 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 			continue
 		}
 
+		// Store role ID and project IDs in profile for use in Grants()
+		// This avoids having to query all users again when generating grants
+		profile := make(map[string]interface{})
+		if user.EffectiveRole.ID != "" {
+			profile["role_id"] = user.EffectiveRole.ID
+		}
+
+		projectIDs := make([]interface{}, 0, len(user.EffectiveAssignedProjects))
+		for _, project := range user.EffectiveAssignedProjects {
+			projectIDs = append(projectIDs, project.ID)
+		}
+		if len(projectIDs) > 0 {
+			profile["project_ids"] = projectIDs
+		}
+
 		// Use email as the resource ID instead of the Wiz user ID because:
 		// - userAccounts and users endpoints return different IDs for the same person
 		// - Email is consistent across all Wiz API endpoints
@@ -51,6 +66,7 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 			[]resource.UserTraitOption{
 				resource.WithEmail(user.Email, true),
 				resource.WithStatus(v2.UserTrait_Status_STATUS_ENABLED),
+				resource.WithUserProfile(profile),
 			},
 		)
 		if err != nil {
@@ -74,61 +90,66 @@ func (u *userBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ r
 	return nil, nil, nil
 }
 
-// Grants returns grants for projects this user is a member of.
-// This uses the effectiveAssignedProjects field from the users query.
+// Grants returns grants for projects this user is a member of and their role assignment.
+// Data is read from the user profile that was populated during List().
 func (u *userBuilder) Grants(ctx context.Context, res *v2.Resource, attr resource.SyncOpAttrs) ([]*v2.Grant, *resource.SyncOpResults, error) {
 	var grants []*v2.Grant
 
-	// Get the page token from the sync attributes
-	var cursor *string
-	if attr.PageToken.Token != "" {
-		cursor = &attr.PageToken.Token
-	}
-
-	userEmail := res.Id.Resource
-
-	// Fetch users to find the specific user and their project assignments
-	resp, err := u.client.ListUsers(ctx, cursor)
+	// Extract the user trait to get the profile data
+	userTrait, err := resource.GetUserTrait(res)
 	if err != nil {
-		return nil, nil, fmt.Errorf("wiz-connector: failed to list users for project grants: %w", err)
+		return nil, nil, fmt.Errorf("wiz-connector: failed to get user trait: %w", err)
 	}
 
-	// Find the specific user we're getting grants for
-	for _, user := range resp.Nodes {
-		if user.Email != userEmail {
-			continue
+	profile := userTrait.GetProfile()
+	if profile == nil {
+		// No profile data, return empty grants
+		return grants, nil, nil
+	}
+
+	// Create role grant if role_id is present
+	if roleID, ok := profile.Fields["role_id"]; ok && roleID.GetStringValue() != "" {
+		roleResource, err := resource.NewRoleResource(
+			"", // Name is not needed for grant creation
+			roleResourceType,
+			roleID.GetStringValue(),
+			[]resource.RoleTraitOption{},
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("wiz-connector: failed to create role resource: %w", err)
 		}
 
-		// Create grants for each project the user is assigned to
-		for _, project := range user.EffectiveAssignedProjects {
-			// Create the project resource for the grant
-			projectRes, err := resource.NewGroupResource(
-				project.Name,
-				projectResourceType,
-				project.ID,
-				[]resource.GroupTraitOption{},
-			)
-			if err != nil {
-				return nil, nil, fmt.Errorf("wiz-connector: failed to create project resource: %w", err)
+		roleGrant := grant.NewGrant(roleResource, "member", res.Id)
+		grants = append(grants, roleGrant)
+	}
+
+	// Create project grants if project_ids is present
+	if projectIDsValue, ok := profile.Fields["project_ids"]; ok {
+		projectIDsList := projectIDsValue.GetListValue()
+		if projectIDsList != nil {
+			for _, projectIDValue := range projectIDsList.Values {
+				projectID := projectIDValue.GetStringValue()
+				if projectID == "" {
+					continue
+				}
+
+				projectRes, err := resource.NewGroupResource(
+					"", // Name is not needed for grant creation
+					projectResourceType,
+					projectID,
+					[]resource.GroupTraitOption{},
+				)
+				if err != nil {
+					return nil, nil, fmt.Errorf("wiz-connector: failed to create project resource: %w", err)
+				}
+
+				projectGrant := grant.NewGrant(projectRes, "member", res.Id)
+				grants = append(grants, projectGrant)
 			}
-
-			// Create a grant for this user to the project's "member" entitlement
-			userGrant := grant.NewGrant(projectRes, "member", res.Id)
-
-			grants = append(grants, userGrant)
 		}
-
-		// Found the user, no need to continue
-		break
 	}
 
-	// Prepare the sync results with next page token if there are more pages
-	syncResults := &resource.SyncOpResults{}
-	if resp.PageInfo.HasNextPage {
-		syncResults.NextPageToken = resp.PageInfo.EndCursor
-	}
-
-	return grants, syncResults, nil
+	return grants, nil, nil
 }
 
 func newUserBuilder(client wiz.Client) *userBuilder {

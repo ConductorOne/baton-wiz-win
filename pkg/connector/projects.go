@@ -35,9 +35,7 @@ func (p *projectBuilder) List(ctx context.Context, parentResourceID *v2.Resource
 		return nil, nil, fmt.Errorf("wiz-connector: failed to list projects: %w", err)
 	}
 
-	for _, edge := range resp.Edges {
-		project := edge.Node
-
+	for _, project := range resp.Nodes {
 		projectResource, err := resource.NewGroupResource(
 			project.Name,
 			projectResourceType,
@@ -118,9 +116,7 @@ func (p *projectBuilder) Grants(ctx context.Context, res *v2.Resource, attr reso
 	}
 
 	// Find the specific project we're getting grants for
-	for _, edge := range resp.Edges {
-		project := edge.Node
-
+	for _, project := range resp.Nodes {
 		if project.ID != projectID {
 			continue
 		}
