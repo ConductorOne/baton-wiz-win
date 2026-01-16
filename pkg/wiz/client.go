@@ -49,7 +49,10 @@ func NewClient(ctx context.Context, apiURL, clientID, clientSecret, authEndpoint
 	httpClient := config.Client(ctx)
 
 	// Wrap with baton-sdk's HTTP client wrapper for proper error handling and retries
-	wrapper := uhttp.NewBaseHttpClient(httpClient)
+	wrapper, err := uhttp.NewBaseHttpClientWithContext(ctx, httpClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http client wrapper: %w", err)
+	}
 
 	return &client{
 		wrapper: wrapper,
