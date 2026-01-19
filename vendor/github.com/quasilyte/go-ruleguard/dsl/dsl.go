@@ -10,10 +10,10 @@ type Matcher map[string]Var
 // That table is used during the rules compilation.
 //
 // The table has the following effect on the rules:
-//   - For type expressions, it's used to resolve the
-//     full package paths of qualified types, like `foo.Bar`.
-//     If Import(`a/b/foo`) is called, `foo.Bar` will match
-//     `a/b/foo.Bar` type during the pattern execution.
+//	* For type expressions, it's used to resolve the
+//	  full package paths of qualified types, like `foo.Bar`.
+//	  If Import(`a/b/foo`) is called, `foo.Bar` will match
+//	  `a/b/foo.Bar` type during the pattern execution.
 func (m Matcher) Import(pkgPath string) {}
 
 // ImportAs is like Import, but can handle "/v2" packages
@@ -41,19 +41,19 @@ func (m Matcher) Match(pattern string, alternatives ...string) Matcher {
 //
 // Given this pattern:
 //
-//	`(?P<first>\d+)\.(\d+).(?P<second>\d+)`
+//     `(?P<first>\d+)\.(\d+).(?P<second>\d+)`
 //
 // And this input comment: `// 14.6.600`
 //
 // We'll get these submatches:
 //
-//	m["$$"] => `14.6.600`
-//	m["first"] => `14`
-//	m["second"] => `600`
+//     m["$$"] => `14.6.600`
+//     m["first"] => `14`
+//     m["second"] => `600`
 //
 // All usual filters can be applied:
 //
-//	Where(!m["first"].Text.Matches(`foo`))
+//     Where(!m["first"].Text.Matches(`foo`))
 //
 // You can use this to reject some matches (allow-list behavior).
 func (m Matcher) MatchComment(pattern string, alternatives ...string) Matcher {
@@ -267,8 +267,8 @@ func (ExprType) Implements(typ typeName) bool { return boolResult }
 //
 // To avoid confusion with Implements() method, here is a hint when to use which:
 //
-//   - To check if it's possible to call F on x, use HasMethod(F)
-//   - To check if x can be passed as I interface, use Implements(I)
+//	- To check if it's possible to call F on x, use HasMethod(F)
+//	- To check if x can be passed as I interface, use Implements(I)
 func (ExprType) HasMethod(fn string) bool { return boolResult }
 
 // Is reports whether a type is identical to a given type.
@@ -290,15 +290,15 @@ func (ExprType) HasPointers() bool { return boolResult }
 //
 // Only a few "kinds" are recognized, the list is provided below.
 //
-//		"integer"  -- typ is *types.Basic, where typ.Info()&types.Integer != 0
-//		"unsigned" -- typ is *types.Basic, where typ.Info()&types.Unsigned != 0
-//		"float"    -- typ is *types.Basic, where typ.Info()&types.Float != 0
-//		"complex"  -- typ is *types.Basic, where typ.Info()&types.Complex != 0
-//		"untyped"  -- typ is *types.Basic, where typ.Info()&types.Untyped != 0
-//		"numeric"  -- typ is *types.Basic, where typ.Info()&types.Numeric != 0
-//	 "signed"   -- identical to `OfKind("integer") && !OfKind("unsigned")`
-//	 "int"      -- int, int8, int16, int32, int64
-//	 "uint"     -- uint, uint8, uint16, uint32, uint64
+//	"integer"  -- typ is *types.Basic, where typ.Info()&types.Integer != 0
+//	"unsigned" -- typ is *types.Basic, where typ.Info()&types.Unsigned != 0
+//	"float"    -- typ is *types.Basic, where typ.Info()&types.Float != 0
+//	"complex"  -- typ is *types.Basic, where typ.Info()&types.Complex != 0
+//	"untyped"  -- typ is *types.Basic, where typ.Info()&types.Untyped != 0
+//	"numeric"  -- typ is *types.Basic, where typ.Info()&types.Numeric != 0
+//  "signed"   -- identical to `OfKind("integer") && !OfKind("unsigned")`
+//  "int"      -- int, int8, int16, int32, int64
+//  "uint"     -- uint, uint8, uint16, uint32, uint64
 //
 // Note: "int" will include "rune" as well, as it's an alias.
 // In the same manner, "uint" includes the "byte" type.
@@ -355,9 +355,9 @@ func (GoVersion) LessEqThan(version string) bool { return boolResult }
 // typeName is a helper type used to document function params better.
 //
 // A type name can be:
-//   - builtin type name: `error`, `string`, etc.
-//   - qualified name from a standard library: `io.Reader`, etc.
-//   - fully-qualified type name, like `github.com/username/pkgname.TypeName`
+//	- builtin type name: `error`, `string`, etc.
+//	- qualified name from a standard library: `io.Reader`, etc.
+//	- fully-qualified type name, like `github.com/username/pkgname.TypeName`
 //
 // typeName is also affected by a local import table, which can override
 // how qualified names are interpreted.
