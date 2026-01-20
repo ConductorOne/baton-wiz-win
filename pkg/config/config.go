@@ -45,6 +45,6 @@ var Config = field.NewConfiguration(
 	ConfigurationFields,
 	field.WithConstraints(FieldRelationships...),
 	field.WithConnectorDisplayName("Wiz"),
-	field.WithIconUrl("https://raw.githubusercontent.com/ConductorOne/baton-wiz-win/main/baton-logo.png"),
-	field.WithHelpUrl("https://docs.conductorone.com/integrations/wiz"),
+	field.WithIconUrl("/static/app-icons/wiz.svg"),
+	field.WithHelpUrl("/docs/baton/wiz"),
 )
