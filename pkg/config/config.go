@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	// Wiz authentication configuration fields
+	// Wiz authentication configuration fields.
 	wizAPIURL = field.StringField(
 		"wiz-api-url",
 		field.WithRequired(true),

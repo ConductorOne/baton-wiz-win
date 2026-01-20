@@ -66,9 +66,27 @@ func (p *projectBuilder) StaticEntitlements(ctx context.Context, _ resource.Sync
 
 	entitlements = append(
 		entitlements,
-		ent.NewAssignmentEntitlement(nil, "owner", ent.WithDisplayName("Project Owner"), ent.WithDescription("Owner of a Wiz project with full administrative access"), ent.WithGrantableTo(userResourceType)),
-		ent.NewAssignmentEntitlement(nil, "champion", ent.WithDisplayName("Security Champion"), ent.WithDescription("Security champion for a Wiz project"), ent.WithGrantableTo(userResourceType)),
-		ent.NewAssignmentEntitlement(nil, "member", ent.WithDisplayName("Project Member"), ent.WithDescription("General member of a Wiz project"), ent.WithGrantableTo(userResourceType)),
+		ent.NewAssignmentEntitlement(
+			nil,
+			"owner",
+			ent.WithDisplayName("Project Owner"),
+			ent.WithDescription("Owner of a Wiz project with full administrative access"),
+			ent.WithGrantableTo(userResourceType),
+		),
+		ent.NewAssignmentEntitlement(
+			nil,
+			"champion",
+			ent.WithDisplayName("Security Champion"),
+			ent.WithDescription("Security champion for a Wiz project"),
+			ent.WithGrantableTo(userResourceType),
+		),
+		ent.NewAssignmentEntitlement(
+			nil,
+			"member",
+			ent.WithDisplayName("Project Member"),
+			ent.WithDescription("General member of a Wiz project"),
+			ent.WithGrantableTo(userResourceType),
+		),
 	)
 
 	return entitlements, nil, nil

@@ -61,7 +61,16 @@ func (r *roleBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 // The SDK will expand this template for each role resource, constructing the ID, display name, and description.
 func (r *roleBuilder) StaticEntitlements(ctx context.Context, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
 	var entitlements []*v2.Entitlement
-	entitlements = append(entitlements, ent.NewAssignmentEntitlement(nil, "member", ent.WithDisplayName("Role Member"), ent.WithDescription("Member of a Wiz role"), ent.WithGrantableTo(userResourceType)))
+	entitlements = append(
+		entitlements,
+		ent.NewAssignmentEntitlement(
+			nil,
+			"member",
+			ent.WithDisplayName("Role Member"),
+			ent.WithDescription("Member of a Wiz role"),
+			ent.WithGrantableTo(userResourceType),
+		),
+	)
 
 	return entitlements, nil, nil
 }

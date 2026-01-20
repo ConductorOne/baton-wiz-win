@@ -84,9 +84,12 @@ func (c *client) graphQLRequest(ctx context.Context, query string, variables map
 	gqlResp.Data = result
 
 	// Execute the request with JSON response handling
-	_, err = c.wrapper.Do(req, uhttp.WithJSONResponse(&gqlResp))
+	resp, err := c.wrapper.Do(req, uhttp.WithJSONResponse(&gqlResp))
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
 	}
 
 	// Check for GraphQL-specific errors in the response

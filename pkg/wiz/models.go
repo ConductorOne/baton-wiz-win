@@ -109,7 +109,7 @@ type IssueConnection struct {
 	PageInfo PageInfo `json:"pageInfo"`
 }
 
-// GraphQL response wrapper types
+// GraphQL response wrapper types.
 type graphQLResponse struct {
 	Data   interface{}    `json:"data"`
 	Errors []graphQLError `json:"errors,omitempty"`
@@ -120,19 +120,11 @@ type graphQLError struct {
 	Path    []interface{} `json:"path,omitempty"`
 }
 
-// Specific response types for each query
-type usersQueryResponse struct {
-	Users UserConnection `json:"users"`
-}
-
+// Specific response types for each query.
 type projectsQueryResponse struct {
 	Projects ProjectConnection `json:"projects"`
 }
 
 type issuesQueryResponse struct {
 	Issues IssueConnection `json:"issues"`
-}
-
-type userRolesQueryResponse struct {
-	UserRoles UserRoleConnection `json:"userRoles"`
 }
