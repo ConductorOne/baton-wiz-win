@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
-	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
 )
@@ -57,22 +56,31 @@ func (r *roleBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	return resources, syncResults, nil
 }
 
-// Entitlements returns a "member" entitlement for each role.
-func (r *roleBuilder) Entitlements(ctx context.Context, res *v2.Resource, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
+// StaticEntitlements returns a static "member" entitlement for all roles.
+// This is called once per resource type, not per resource.
+func (r *roleBuilder) StaticEntitlements(ctx context.Context, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
 	var entitlements []*v2.Entitlement
 
-	// Create a "member" entitlement for the role
-	memberEntitlement := entitlement.NewAssignmentEntitlement(
-		res,
-		"member",
-		entitlement.WithGrantableTo(userResourceType),
-		entitlement.WithDisplayName(fmt.Sprintf("%s Role Member", res.DisplayName)),
-		entitlement.WithDescription(fmt.Sprintf("Access to %s role in Wiz", res.DisplayName)),
-	)
+	// Create a static "member" entitlement that applies to all role resources
+	// For static entitlements, the ID format is "resourceType:slug" (no specific resource ID)
+	memberEntitlement := &v2.Entitlement{
+		Id:          fmt.Sprintf("%s:member", roleResourceType.Id),
+		DisplayName: "Role Member",
+		Description: "Member of a Wiz role",
+		Slug:        "member",
+		Purpose:     v2.Entitlement_PURPOSE_VALUE_ASSIGNMENT,
+		GrantableTo: []*v2.ResourceType{userResourceType},
+	}
 
 	entitlements = append(entitlements, memberEntitlement)
 
 	return entitlements, nil, nil
+}
+
+// Entitlements is required by ResourceSyncerV2 but we use StaticEntitlements instead.
+// This should not be called due to the SkipEntitlements annotation on the resource type.
+func (r *roleBuilder) Entitlements(ctx context.Context, res *v2.Resource, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
+	return nil, nil, nil
 }
 
 // Grants returns grants for users who have this role.

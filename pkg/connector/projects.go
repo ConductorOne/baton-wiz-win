@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
-	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
@@ -59,41 +58,52 @@ func (p *projectBuilder) List(ctx context.Context, parentResourceID *v2.Resource
 	return projects, syncResults, nil
 }
 
-// Entitlements returns "owner", "champion", and "member" entitlements for each project.
-func (p *projectBuilder) Entitlements(ctx context.Context, res *v2.Resource, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
+// StaticEntitlements returns static "owner", "champion", and "member" entitlements for all projects.
+// This is called once per resource type, not per resource.
+func (p *projectBuilder) StaticEntitlements(ctx context.Context, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
 	var entitlements []*v2.Entitlement
 
-	// Create an "owner" entitlement for project owners
-	ownerEntitlement := entitlement.NewAssignmentEntitlement(
-		res,
-		"owner",
-		entitlement.WithGrantableTo(userResourceType),
-		entitlement.WithDisplayName(fmt.Sprintf("%s Project Owner", res.DisplayName)),
-		entitlement.WithDescription(fmt.Sprintf("Owner of %s project with full administrative access", res.DisplayName)),
-	)
+	// Create a static "owner" entitlement that applies to all project resources
+	// For static entitlements, the ID format is "resourceType:slug" (no specific resource ID)
+	ownerEntitlement := &v2.Entitlement{
+		Id:          fmt.Sprintf("%s:owner", projectResourceType.Id),
+		DisplayName: "Project Owner",
+		Description: "Owner of a Wiz project with full administrative access",
+		Slug:        "owner",
+		Purpose:     v2.Entitlement_PURPOSE_VALUE_ASSIGNMENT,
+		GrantableTo: []*v2.ResourceType{userResourceType},
+	}
 	entitlements = append(entitlements, ownerEntitlement)
 
-	// Create a "champion" entitlement for security champions
-	championEntitlement := entitlement.NewAssignmentEntitlement(
-		res,
-		"champion",
-		entitlement.WithGrantableTo(userResourceType),
-		entitlement.WithDisplayName(fmt.Sprintf("%s Security Champion", res.DisplayName)),
-		entitlement.WithDescription(fmt.Sprintf("Security champion for %s project", res.DisplayName)),
-	)
+	// Create a static "champion" entitlement for security champions
+	championEntitlement := &v2.Entitlement{
+		Id:          fmt.Sprintf("%s:champion", projectResourceType.Id),
+		DisplayName: "Security Champion",
+		Description: "Security champion for a Wiz project",
+		Slug:        "champion",
+		Purpose:     v2.Entitlement_PURPOSE_VALUE_ASSIGNMENT,
+		GrantableTo: []*v2.ResourceType{userResourceType},
+	}
 	entitlements = append(entitlements, championEntitlement)
 
-	// Create a "member" entitlement for general project members
-	memberEntitlement := entitlement.NewAssignmentEntitlement(
-		res,
-		"member",
-		entitlement.WithGrantableTo(userResourceType),
-		entitlement.WithDisplayName(fmt.Sprintf("%s Project Member", res.DisplayName)),
-		entitlement.WithDescription(fmt.Sprintf("General member of %s project", res.DisplayName)),
-	)
+	// Create a static "member" entitlement for general project members
+	memberEntitlement := &v2.Entitlement{
+		Id:          fmt.Sprintf("%s:member", projectResourceType.Id),
+		DisplayName: "Project Member",
+		Description: "General member of a Wiz project",
+		Slug:        "member",
+		Purpose:     v2.Entitlement_PURPOSE_VALUE_ASSIGNMENT,
+		GrantableTo: []*v2.ResourceType{userResourceType},
+	}
 	entitlements = append(entitlements, memberEntitlement)
 
 	return entitlements, nil, nil
+}
+
+// Entitlements is required by ResourceSyncerV2 but we use StaticEntitlements instead.
+// This should not be called due to the SkipEntitlements annotation on the resource type.
+func (p *projectBuilder) Entitlements(ctx context.Context, res *v2.Resource, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
+	return nil, nil, nil
 }
 
 // Grants returns grants for users who are members of this project.

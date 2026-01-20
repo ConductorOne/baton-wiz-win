@@ -31,6 +31,7 @@ var roleResourceType = &v2.ResourceType{
 				{Permission: "read:users"}, // Required for fetching user-to-role memberships
 			},
 		},
+		&v2.SkipEntitlements{},
 	),
 }
 
@@ -45,6 +46,7 @@ var projectResourceType = &v2.ResourceType{
 				{Permission: "read:projects"},
 			},
 		},
+		&v2.SkipEntitlements{},
 	),
 }
 
