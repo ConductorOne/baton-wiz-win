@@ -78,7 +78,7 @@ func (i *insightBuilder) List(ctx context.Context, parentResourceID *v2.Resource
 			fmt.Sprintf("%s - %s", issue.SourceRule.Name, issue.EntitySnapshot.Name),
 			securityInsightResourceType,
 			resourceID,
-			"wiz-issue", // insightType
+			v2.InsightType_INSIGHT_TYPE_ISSUE, // insightType enum
 			insightValue,
 			issue.EntitySnapshot.ExternalID, // targetExternalId
 			appHint,                         // targetAppHint

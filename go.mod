@@ -3,13 +3,12 @@ module github.com/conductorone/baton-wiz-win
 go 1.25.5
 
 require (
-	github.com/conductorone/baton-sdk v0.6.8
+	github.com/conductorone/baton-sdk v0.6.23
 	github.com/ennyjfrick/ruleguard-logfatal v0.0.2
 	github.com/quasilyte/go-ruleguard/dsl v0.3.23
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/oauth2 v0.26.0
 	google.golang.org/grpc v1.71.0
-	google.golang.org/protobuf v1.36.5
 )
 
 require (
@@ -114,6 +113,7 @@ require (
 	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250219182151-9fdb1cabc7b2 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
