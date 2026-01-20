@@ -107,6 +107,6 @@
     }
   ],
   "displayName": "Wiz",
-  "helpUrl": "https://docs.conductorone.com/integrations/wiz",
-  "iconUrl": "https://raw.githubusercontent.com/ConductorOne/baton-wiz-win/main/baton-logo.png"
+  "helpUrl": "/docs/baton/wiz",
+  "iconUrl": "/static/app-icons/wiz.svg"
 }
