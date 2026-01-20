@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	ent "github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
 )
@@ -56,23 +57,11 @@ func (r *roleBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	return resources, syncResults, nil
 }
 
-// StaticEntitlements returns a static "member" entitlement for all roles.
-// This is called once per resource type, not per resource.
+// StaticEntitlements returns a static "member" entitlement template for all roles.
+// The SDK will expand this template for each role resource, constructing the ID, display name, and description.
 func (r *roleBuilder) StaticEntitlements(ctx context.Context, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
 	var entitlements []*v2.Entitlement
-
-	// Create a static "member" entitlement that applies to all role resources
-	// For static entitlements, the ID format is "resourceType:slug" (no specific resource ID)
-	memberEntitlement := &v2.Entitlement{
-		Id:          fmt.Sprintf("%s:member", roleResourceType.Id),
-		DisplayName: "Role Member",
-		Description: "Member of a Wiz role",
-		Slug:        "member",
-		Purpose:     v2.Entitlement_PURPOSE_VALUE_ASSIGNMENT,
-		GrantableTo: []*v2.ResourceType{userResourceType},
-	}
-
-	entitlements = append(entitlements, memberEntitlement)
+	entitlements = append(entitlements, ent.NewAssignmentEntitlement(nil, "member", ent.WithDisplayName("Role Member"), ent.WithDescription("Member of a Wiz role"), ent.WithGrantableTo(userResourceType)))
 
 	return entitlements, nil, nil
 }

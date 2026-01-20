@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	ent "github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
@@ -63,39 +64,12 @@ func (p *projectBuilder) List(ctx context.Context, parentResourceID *v2.Resource
 func (p *projectBuilder) StaticEntitlements(ctx context.Context, _ resource.SyncOpAttrs) ([]*v2.Entitlement, *resource.SyncOpResults, error) {
 	var entitlements []*v2.Entitlement
 
-	// Create a static "owner" entitlement that applies to all project resources
-	// For static entitlements, the ID format is "resourceType:slug" (no specific resource ID)
-	ownerEntitlement := &v2.Entitlement{
-		Id:          fmt.Sprintf("%s:owner", projectResourceType.Id),
-		DisplayName: "Project Owner",
-		Description: "Owner of a Wiz project with full administrative access",
-		Slug:        "owner",
-		Purpose:     v2.Entitlement_PURPOSE_VALUE_ASSIGNMENT,
-		GrantableTo: []*v2.ResourceType{userResourceType},
-	}
-	entitlements = append(entitlements, ownerEntitlement)
-
-	// Create a static "champion" entitlement for security champions
-	championEntitlement := &v2.Entitlement{
-		Id:          fmt.Sprintf("%s:champion", projectResourceType.Id),
-		DisplayName: "Security Champion",
-		Description: "Security champion for a Wiz project",
-		Slug:        "champion",
-		Purpose:     v2.Entitlement_PURPOSE_VALUE_ASSIGNMENT,
-		GrantableTo: []*v2.ResourceType{userResourceType},
-	}
-	entitlements = append(entitlements, championEntitlement)
-
-	// Create a static "member" entitlement for general project members
-	memberEntitlement := &v2.Entitlement{
-		Id:          fmt.Sprintf("%s:member", projectResourceType.Id),
-		DisplayName: "Project Member",
-		Description: "General member of a Wiz project",
-		Slug:        "member",
-		Purpose:     v2.Entitlement_PURPOSE_VALUE_ASSIGNMENT,
-		GrantableTo: []*v2.ResourceType{userResourceType},
-	}
-	entitlements = append(entitlements, memberEntitlement)
+	entitlements = append(
+		entitlements,
+		ent.NewAssignmentEntitlement(nil, "owner", ent.WithDisplayName("Project Owner"), ent.WithDescription("Owner of a Wiz project with full administrative access"), ent.WithGrantableTo(userResourceType)),
+		ent.NewAssignmentEntitlement(nil, "champion", ent.WithDisplayName("Security Champion"), ent.WithDescription("Security champion for a Wiz project"), ent.WithGrantableTo(userResourceType)),
+		ent.NewAssignmentEntitlement(nil, "member", ent.WithDisplayName("Project Member"), ent.WithDescription("General member of a Wiz project"), ent.WithGrantableTo(userResourceType)),
+	)
 
 	return entitlements, nil, nil
 }
