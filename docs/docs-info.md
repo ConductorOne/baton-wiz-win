@@ -22,12 +22,12 @@ While developing the connector, please fill out this form. This information is n
 
 1. What credentials or information are needed to set up the connector? (For example, API key, client ID and secret, domain, etc.)
 
-   The connector requires four pieces of information:
+   The connector requires three pieces of information:
    
    * **Wiz API URL** - The GraphQL API endpoint for your Wiz region (e.g., `https://api.us83.app.wiz.io/graphql`)
    * **OAuth2 Client ID** - The service account's client ID
    * **OAuth2 Client Secret** - The service account's client secret
-   * **OAuth2 Auth Endpoint** - The token endpoint for authentication (typically `https://auth.app.wiz.io/oauth/token`)
+   * **OAuth2 Auth Endpoint** (optional) - The token endpoint for authentication. Defaults to `https://auth.app.wiz.io/oauth/token`. Only change if using Auth0 (`https://auth.wiz.io/oauth/token`) or gov tenants (`https://auth.gov.wiz.io/oauth/token`).
 
 2. For each item in the list above: 
 
@@ -41,7 +41,7 @@ While developing the connector, please fill out this form. This information is n
    6. Click "Create"
    7. Copy the **Client ID** and **Client Secret** (the secret is only shown once!)
    8. The **API URL** can be found in your Wiz portal settings or documentation (varies by region: us17, us83, eu1, etc.)
-   9. The **Auth Endpoint** is typically `https://auth.app.wiz.io/oauth/token` for all regions
+   9. The **Auth Endpoint** defaults to `https://auth.app.wiz.io/oauth/token` and typically doesn't need to be changed unless you're using Auth0 or a gov tenant
    
    Documentation: https://docs.wiz.io/wiz-docs/docs/using-the-wiz-api (may be gated)
    

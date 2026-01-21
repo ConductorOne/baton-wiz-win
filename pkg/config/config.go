@@ -28,10 +28,9 @@ var (
 	)
 	wizAuthEndpoint = field.StringField(
 		"wiz-auth-endpoint",
-		field.WithRequired(true),
 		field.WithDisplayName("Auth Endpoint"),
-		field.WithDescription("OAuth2 token endpoint for authentication"),
-		field.WithPlaceholder("https://auth.app.wiz.io/oauth/token"),
+		field.WithDescription("OAuth2 token endpoint for authentication. Only change if using Auth0 or gov tenants."),
+		field.WithDefaultValue("https://auth.app.wiz.io/oauth/token"),
 	)
 
 	ConfigurationFields = []field.SchemaField{wizAPIURL, wizClientID, wizClientSecret, wizAuthEndpoint}
