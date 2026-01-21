@@ -96,13 +96,9 @@
     {
       "name": "wiz-auth-endpoint",
       "displayName": "Auth Endpoint",
-      "description": "OAuth2 token endpoint for authentication",
-      "placeholder": "https://auth.app.wiz.io/oauth/token",
-      "isRequired": true,
+      "description": "OAuth2 token endpoint for authentication. Only change if using Auth0 or gov tenants.",
       "stringField": {
-        "rules": {
-          "isRequired": true
-        }
+        "defaultValue": "https://auth.app.wiz.io/oauth/token"
       }
     }
   ],
