@@ -96,17 +96,13 @@
     {
       "name": "wiz-auth-endpoint",
       "displayName": "Auth Endpoint",
-      "description": "OAuth2 token endpoint for authentication",
-      "placeholder": "https://auth.app.wiz.io/oauth/token",
-      "isRequired": true,
+      "description": "OAuth2 token endpoint for authentication. Only change if using Auth0 or gov tenants.",
       "stringField": {
-        "rules": {
-          "isRequired": true
-        }
+        "defaultValue": "https://auth.app.wiz.io/oauth/token"
       }
     }
   ],
   "displayName": "Wiz",
-  "helpUrl": "https://docs.conductorone.com/integrations/wiz",
-  "iconUrl": "https://raw.githubusercontent.com/ConductorOne/baton-wiz-win/main/baton-logo.png"
+  "helpUrl": "/docs/baton/wiz",
+  "iconUrl": "/static/app-icons/wiz.svg"
 }

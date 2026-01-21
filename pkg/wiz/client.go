@@ -27,10 +27,16 @@ type client struct {
 	apiURL  string
 }
 
+// DefaultAuthEndpoint is the standard Wiz OAuth2 token endpoint (Cognito).
+const DefaultAuthEndpoint = "https://auth.app.wiz.io/oauth/token"
+
 // NewClient creates a new Wiz API client with OAuth2 authentication.
 func NewClient(ctx context.Context, apiURL, clientID, clientSecret, authEndpoint string) (Client, error) {
-	if apiURL == "" || clientID == "" || clientSecret == "" || authEndpoint == "" {
-		return nil, fmt.Errorf("all authentication parameters are required")
+	if apiURL == "" || clientID == "" || clientSecret == "" {
+		return nil, fmt.Errorf("apiURL, clientID, and clientSecret are required")
+	}
+	if authEndpoint == "" {
+		authEndpoint = DefaultAuthEndpoint
 	}
 
 	// Configure OAuth2 client credentials flow
