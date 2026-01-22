@@ -29,7 +29,6 @@ type client struct {
 
 // NewClient creates a new Wiz API client with OAuth2 authentication.
 func NewClient(ctx context.Context, apiURL, clientID, clientSecret, authEndpoint string) (Client, error) {
-
 	// Configure OAuth2 client credentials flow
 	// Wiz requires the "audience=wiz-api" parameter for token requests
 	config := clientcredentials.Config{
