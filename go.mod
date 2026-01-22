@@ -3,7 +3,7 @@ module github.com/conductorone/baton-wiz-win
 go 1.25.5
 
 require (
-	github.com/conductorone/baton-sdk v0.6.23
+	github.com/conductorone/baton-sdk v0.6.24
 	github.com/ennyjfrick/ruleguard-logfatal v0.0.2
 	github.com/quasilyte/go-ruleguard/dsl v0.3.23
 	github.com/stretchr/testify v1.11.1

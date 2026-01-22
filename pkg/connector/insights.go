@@ -73,18 +73,17 @@ func (i *insightBuilder) List(ctx context.Context, parentResourceID *v2.Resource
 			cloudPlatform = *issue.EntitySnapshot.CloudPlatform
 		}
 
-		// Create a security insight resource targeting the external resource
-		insightResource, err := resource.NewExternalResourceSecurityInsightResource(
+		// Create a security insight resource targeting the external resource using the new oneof-based API
+		insightResource, err := resource.NewResource(
 			fmt.Sprintf("%s - %s", issue.SourceRule.Name, issue.EntitySnapshot.Name),
 			securityInsightResourceType,
 			resourceID,
-			v2.InsightType_INSIGHT_TYPE_ISSUE, // insightType enum
-			insightValue,
-			issue.EntitySnapshot.ExternalID, // targetExternalId
-			appHint,                         // targetAppHint
-			[]resource.SecurityInsightTraitOption{
+			resource.WithSecurityInsightTrait(
+				resource.WithIssue(insightValue),
+				resource.WithIssueSeverity(issue.Severity),
+				resource.WithInsightExternalResourceTarget(issue.EntitySnapshot.ExternalID, appHint),
 				resource.WithInsightObservedAt(issue.CreatedAt),
-			},
+			),
 			resource.WithDescription(fmt.Sprintf(
 				"Wiz Security Issue: %s (Status: %s, Severity: %s) affecting %s resource %s",
 				issue.SourceRule.Name,
