@@ -1,137 +1,137 @@
 {
-  "@type":  "type.googleapis.com/c1.connector.v2.ConnectorCapabilities",
-  "resourceTypeCapabilities":  [
+  "@type": "type.googleapis.com/c1.connector.v2.ConnectorCapabilities",
+  "resourceTypeCapabilities": [
     {
-      "resourceType":  {
-        "id":  "project",
-        "displayName":  "Project",
-        "traits":  [
+      "resourceType": {
+        "id": "project",
+        "displayName": "Project",
+        "traits": [
           "TRAIT_GROUP"
         ],
-        "annotations":  [
+        "annotations": [
           {
-            "@type":  "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
-            "permissions":  [
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
               {
-                "permission":  "read:projects"
+                "permission": "read:projects"
               }
             ]
           },
           {
-            "@type":  "type.googleapis.com/c1.connector.v2.SkipEntitlements"
+            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlements"
           }
         ]
       },
-      "capabilities":  [
+      "capabilities": [
         "CAPABILITY_SYNC"
       ],
-      "permissions":  {
-        "permissions":  [
+      "permissions": {
+        "permissions": [
           {
-            "permission":  "read:projects"
+            "permission": "read:projects"
           }
         ]
       }
     },
     {
-      "resourceType":  {
-        "id":  "role",
-        "displayName":  "Role",
-        "traits":  [
+      "resourceType": {
+        "id": "role",
+        "displayName": "Role",
+        "traits": [
           "TRAIT_ROLE"
         ],
-        "annotations":  [
+        "annotations": [
           {
-            "@type":  "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
-            "permissions":  [
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
               {
-                "permission":  "read:users"
+                "permission": "read:users"
               }
             ]
           },
           {
-            "@type":  "type.googleapis.com/c1.connector.v2.SkipEntitlements"
+            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlements"
           }
         ]
       },
-      "capabilities":  [
+      "capabilities": [
         "CAPABILITY_SYNC"
       ],
-      "permissions":  {
-        "permissions":  [
+      "permissions": {
+        "permissions": [
           {
-            "permission":  "read:users"
+            "permission": "read:users"
           }
         ]
       }
     },
     {
-      "resourceType":  {
-        "id":  "security-insight",
-        "displayName":  "Security Insight",
-        "traits":  [
+      "resourceType": {
+        "id": "security-insight",
+        "displayName": "Security Insight",
+        "traits": [
           "TRAIT_SECURITY_INSIGHT"
         ],
-        "annotations":  [
+        "annotations": [
           {
-            "@type":  "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
-            "permissions":  [
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
               {
-                "permission":  "read:issues"
+                "permission": "read:issues"
               }
             ]
           },
           {
-            "@type":  "type.googleapis.com/c1.connector.v2.SkipEntitlementsAndGrants"
+            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlementsAndGrants"
           }
         ]
       },
-      "capabilities":  [
+      "capabilities": [
         "CAPABILITY_SYNC"
       ],
-      "permissions":  {
-        "permissions":  [
+      "permissions": {
+        "permissions": [
           {
-            "permission":  "read:issues"
+            "permission": "read:issues"
           }
         ]
       }
     },
     {
-      "resourceType":  {
-        "id":  "user",
-        "displayName":  "User",
-        "traits":  [
+      "resourceType": {
+        "id": "user",
+        "displayName": "User",
+        "traits": [
           "TRAIT_USER"
         ],
-        "annotations":  [
+        "annotations": [
           {
-            "@type":  "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
-            "permissions":  [
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
               {
-                "permission":  "read:users"
+                "permission": "read:users"
               }
             ]
           },
           {
-            "@type":  "type.googleapis.com/c1.connector.v2.SkipEntitlements"
+            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlements"
           }
         ]
       },
-      "capabilities":  [
+      "capabilities": [
         "CAPABILITY_SYNC"
       ],
-      "permissions":  {
-        "permissions":  [
+      "permissions": {
+        "permissions": [
           {
-            "permission":  "read:users"
+            "permission": "read:users"
           }
         ]
       }
     }
   ],
-  "connectorCapabilities":  [
+  "connectorCapabilities": [
     "CAPABILITY_SYNC"
   ],
-  "credentialDetails":  {}
+  "credentialDetails": {}
 }
