@@ -8,6 +8,7 @@ type WizWin struct {
 	WizClientId string `mapstructure:"wiz-client-id"`
 	WizClientSecret string `mapstructure:"wiz-client-secret"`
 	WizAuthEndpoint string `mapstructure:"wiz-auth-endpoint"`
+	BaseUrl string `mapstructure:"base-url"`
 }
 
 func (c *WizWin) findFieldByTag(tagValue string) (any, bool) {
