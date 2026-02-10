@@ -1,6 +1,6 @@
 ![Baton Logo](./baton-logo.png)
 
-# `baton-wiz-win` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-wiz-win.svg)](https://pkg.go.dev/github.com/conductorone/baton-wiz-win) ![main ci](https://github.com/conductorone/baton-wiz-win/actions/workflows/main.yaml/badge.svg)
+# `baton-wiz-win` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-wiz-win.svg)](https://pkg.go.dev/github.com/conductorone/baton-wiz-win) ![verify](https://github.com/conductorone/baton-wiz-win/actions/workflows/verify.yaml/badge.svg)
 
 `baton-wiz-win` is a connector for Wiz.io cloud security platform built using the [Baton SDK](https://github.com/conductorone/baton-sdk). It syncs IAM resources (users, roles, projects) and security insights from Wiz to enable comprehensive identity and security posture management.
 
