@@ -67,38 +67,6 @@
     },
     {
       "resourceType": {
-        "id": "security-insight",
-        "displayName": "Security Insight",
-        "traits": [
-          "TRAIT_SECURITY_INSIGHT"
-        ],
-        "annotations": [
-          {
-            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
-            "permissions": [
-              {
-                "permission": "read:issues"
-              }
-            ]
-          },
-          {
-            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlementsAndGrants"
-          }
-        ]
-      },
-      "capabilities": [
-        "CAPABILITY_SYNC"
-      ],
-      "permissions": {
-        "permissions": [
-          {
-            "permission": "read:issues"
-          }
-        ]
-      }
-    },
-    {
-      "resourceType": {
         "id": "user",
         "displayName": "User",
         "traits": [
