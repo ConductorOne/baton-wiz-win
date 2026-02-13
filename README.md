@@ -2,7 +2,7 @@
 
 # `baton-wiz-win` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-wiz-win.svg)](https://pkg.go.dev/github.com/conductorone/baton-wiz-win) ![verify](https://github.com/conductorone/baton-wiz-win/actions/workflows/verify.yaml/badge.svg)
 
-`baton-wiz-win` is a connector for Wiz.io cloud security platform built using the [Baton SDK](https://github.com/conductorone/baton-sdk). It syncs IAM resources (users, roles, projects) and security insights from Wiz to enable comprehensive identity and security posture management.
+`baton-wiz-win` is a connector for Wiz.io cloud security platform built using the [Baton SDK](https://github.com/conductorone/baton-sdk). It syncs IAM resources (users, roles, projects) from Wiz to enable comprehensive identity and access management.
 
 Check out [Baton](https://github.com/conductorone/baton) to learn more the project in general.
 
@@ -12,7 +12,6 @@ Check out [Baton](https://github.com/conductorone/baton) to learn more the proje
 - **OAuth2 Credentials**: Create an OAuth2 client in Wiz with the following permissions:
   - `read:users` - To sync user information
   - `read:projects` - To sync project/workspace information
-  - `read:security_issues` - To sync security insights and findings
 - **API Endpoints**: You'll need both the GraphQL API URL and the OAuth2 token endpoint for your Wiz region
 
 # Getting Started
@@ -64,31 +63,9 @@ baton resources
 
 `baton-wiz-win` synchronizes information about the following Wiz resources:
 
-## IAM Resources
 - **Users**: Wiz user accounts with email, name, status, and role assignments
 - **Roles**: Wiz permission levels (Admin, Editor, Viewer, etc.) with member entitlements
 - **Projects**: Wiz projects/workspaces with membership entitlements
-
-## Security Resources
-- **Security Insights**: Wiz security issues and findings related to user and service account principals
-  - **Server-side filtered for IAM relevance**: Only syncs issues affecting `USER_ACCOUNT` and `SERVICE_ACCOUNT` entities (~14% of total Wiz issues)
-  - Infrastructure issues (VPCs, buckets, regions, etc.) are automatically excluded by the API query to focus on identity-related security risks
-  - Uses the `SecurityInsightTrait` to link Wiz issues to resources from other connectors
-  - Includes severity, status, issue type, and affected resource information
-  - Automatically detects cloud provider (AWS/Azure/GCP) from resource external IDs (e.g., AWS ARNs)
-  - Enables correlation of security findings with IAM access patterns in ConductorOne
-
-## How Security Insights Work
-
-Security Insights in this connector leverage the Baton SDK's `SecurityInsightTrait` to map Wiz findings to external cloud resources:
-
-1. **Issue Discovery**: The connector fetches security issues from Wiz (vulnerabilities, misconfigurations, compliance violations) using GraphQL queries with server-side filtering
-2. **IAM Filtering**: The API query includes `relatedEntity: { type: [USER_ACCOUNT, SERVICE_ACCOUNT] }` to only return principal-related issues, reducing data transfer by ~86%
-3. **External Resource Mapping**: Each issue references a cloud resource via its external ID (e.g., AWS ARN like `arn:aws:iam::123456789012:user/john.doe`)
-4. **Uplift Integration**: ConductorOne's Uplift system matches these external IDs to resources synced from other connectors (baton-aws, baton-azure, etc.)
-5. **Unified View**: Security findings are displayed alongside IAM entitlements, enabling security teams to understand both "who has access" and "what risks exist" for each principal
-
-**Performance Note**: Server-side filtering ensures only IAM-relevant issues are synced, reducing bandwidth and sync time significantly compared to fetching all infrastructure issues.
 
 `baton-wiz-win` does not currently support account provisioning or entitlement provisioning.
 

@@ -49,18 +49,3 @@ var projectResourceType = &v2.ResourceType{
 		&v2.SkipEntitlements{},
 	),
 }
-
-// securityInsightResourceType represents Wiz security insights/issues.
-var securityInsightResourceType = &v2.ResourceType{
-	Id:          "security-insight",
-	DisplayName: "Security Insight",
-	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_SECURITY_INSIGHT},
-	Annotations: annotations.New(
-		&v2.CapabilityPermissions{
-			Permissions: []*v2.CapabilityPermission{
-				{Permission: "read:issues"},
-			},
-		},
-		&v2.SkipEntitlementsAndGrants{},
-	),
-}

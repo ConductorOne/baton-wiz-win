@@ -1,7 +1,5 @@
 package wiz
 
-import "time"
-
 // PageInfo represents GraphQL pagination information using Relay cursor pagination.
 type PageInfo struct {
 	HasNextPage bool   `json:"hasNextPage"`
@@ -78,37 +76,6 @@ type ProjectConnection struct {
 	PageInfo PageInfo  `json:"pageInfo"`
 }
 
-// SourceRule represents the rule that triggered an issue.
-type SourceRule struct {
-	Name string `json:"name"`
-}
-
-// EntitySnapshot represents a cloud resource affected by an issue.
-type EntitySnapshot struct {
-	ID            string  `json:"id"`
-	ExternalID    string  `json:"externalId"`
-	CloudPlatform *string `json:"cloudPlatform"` // Can be null
-	Type          string  `json:"type"`
-	Name          string  `json:"name"`
-}
-
-// Issue represents a Wiz security issue/finding.
-type Issue struct {
-	ID             string         `json:"id"`
-	Type           string         `json:"type"`
-	Severity       string         `json:"severity"`
-	Status         string         `json:"status"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	SourceRule     SourceRule     `json:"sourceRule"`
-	EntitySnapshot EntitySnapshot `json:"entitySnapshot"`
-}
-
-// IssueConnection represents a paginated list of issues.
-type IssueConnection struct {
-	Nodes    []Issue  `json:"nodes"`
-	PageInfo PageInfo `json:"pageInfo"`
-}
-
 // GraphQL response wrapper types.
 type graphQLResponse struct {
 	Data   interface{}    `json:"data"`
@@ -123,8 +90,4 @@ type graphQLError struct {
 // Specific response types for each query.
 type projectsQueryResponse struct {
 	Projects ProjectConnection `json:"projects"`
-}
-
-type issuesQueryResponse struct {
-	Issues IssueConnection `json:"issues"`
 }

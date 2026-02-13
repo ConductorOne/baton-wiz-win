@@ -18,7 +18,6 @@ type Client interface {
 	ListUsers(ctx context.Context, cursor *string) (*UserConnection, error)
 	ListProjects(ctx context.Context, cursor *string) (*ProjectConnection, error)
 	ListUserRoles(ctx context.Context, cursor *string) (*UserRoleConnection, error)
-	ListIssues(ctx context.Context, cursor *string) (*IssueConnection, error)
 }
 
 // client implements the Client interface.
@@ -213,54 +212,4 @@ func (c *client) ListUserRoles(ctx context.Context, cursor *string) (*UserRoleCo
 	}
 
 	return connection, nil
-}
-
-// ListIssues retrieves a paginated list of security issues from Wiz.
-// Only returns issues affecting USER_ACCOUNT or SERVICE_ACCOUNT entities (server-side filtered)
-// to focus on IAM-relevant security risks rather than infrastructure issues.
-func (c *client) ListIssues(ctx context.Context, cursor *string) (*IssueConnection, error) {
-	query := `
-		query ListIssues($cursor: String) {
-			issues(first: 100, after: $cursor, filterBy: {
-				status: [OPEN, IN_PROGRESS],
-				relatedEntity: {
-					type: [USER_ACCOUNT, SERVICE_ACCOUNT]
-				}
-			}) {
-				nodes {
-					id
-					type
-					severity
-					status
-					createdAt
-					sourceRule {
-						name
-					}
-					entitySnapshot {
-						id
-						externalId
-						cloudPlatform
-						type
-						name
-					}
-				}
-				pageInfo {
-					hasNextPage
-					endCursor
-				}
-			}
-		}
-	`
-
-	variables := map[string]interface{}{}
-	if cursor != nil && *cursor != "" {
-		variables["cursor"] = *cursor
-	}
-
-	var result issuesQueryResponse
-	if err := c.graphQLRequest(ctx, query, variables, &result); err != nil {
-		return nil, fmt.Errorf("failed to list issues: %w", err)
-	}
-
-	return &result.Issues, nil
 }

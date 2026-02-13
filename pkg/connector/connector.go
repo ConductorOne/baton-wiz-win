@@ -23,7 +23,6 @@ func (c *Connector) ResourceSyncers(ctx context.Context) []connectorbuilder.Reso
 		newUserBuilder(c.client),
 		newRoleBuilder(c.client),
 		newProjectBuilder(c.client),
-		newInsightBuilder(c.client),
 	}
 }
 
@@ -37,7 +36,7 @@ func (c *Connector) Asset(ctx context.Context, asset *v2.AssetRef) (string, io.R
 func (c *Connector) Metadata(ctx context.Context) (*v2.ConnectorMetadata, error) {
 	return &v2.ConnectorMetadata{
 		DisplayName: "Wiz",
-		Description: "Wiz cloud security platform connector for syncing users, roles, projects, and security insights",
+		Description: "Wiz cloud security platform connector for syncing users, roles, and projects",
 	}, nil
 }
 
