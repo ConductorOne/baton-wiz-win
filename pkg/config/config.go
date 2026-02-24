@@ -33,8 +33,14 @@ var (
 		field.WithDescription("OAuth2 token endpoint for authentication"),
 		field.WithPlaceholder("https://auth.app.wiz.io/oauth/token"),
 	)
+	BaseURLField = field.StringField(
+		"base-url",
+		field.WithDescription("Override the Wiz API URL (for testing)"),
+		field.WithHidden(true),
+		field.WithExportTarget(field.ExportTargetCLIOnly),
+	)
 
-	ConfigurationFields = []field.SchemaField{wizAPIURL, wizClientID, wizClientSecret, wizAuthEndpoint}
+	ConfigurationFields = []field.SchemaField{wizAPIURL, wizClientID, wizClientSecret, wizAuthEndpoint, BaseURLField}
 
 	// FieldRelationships defines relationships between the ConfigurationFields that can be automatically validated.
 	FieldRelationships = []field.SchemaFieldRelationship{}

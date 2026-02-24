@@ -59,10 +59,16 @@ func New(ctx context.Context,
 	[]connectorbuilder.Opt,
 	error,
 ) {
+	// Use base-url override if provided, otherwise use wiz-api-url
+	apiURL := connectorConfig.WizApiUrl
+	if connectorConfig.BaseUrl != "" {
+		apiURL = connectorConfig.BaseUrl
+	}
+
 	// Initialize the Wiz API client
 	client, err := wiz.NewClient(
 		ctx,
-		connectorConfig.WizApiUrl,
+		apiURL,
 		connectorConfig.WizClientId,
 		connectorConfig.WizClientSecret,
 		connectorConfig.WizAuthEndpoint,
