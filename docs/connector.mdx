@@ -131,7 +131,14 @@ For more information, see [Wiz documentation on service accounts](https://docs.w
 
     When running in service mode on Kubernetes, a self-hosted connector maintains an ongoing connection with C1, automatically syncing and uploading data at regular intervals. This data is immediately available in the C1 UI for access reviews and access requests.
 
-    ### Step 1: Set up a new Wiz connector
+    
+    ### Resources
+
+    * [Official download center](https://dist.conductorone.com/ConductorOne/baton-wiz-win): For stable binaries (Windows/Linux/macOS) and container images.
+
+    * [GitHub repository](https://github.com/conductorone/baton-wiz-win): Access the source code, report issues, or contribute to the project.
+
+### Step 1: Set up a new Wiz connector
 
     <Steps>
       <Step>
@@ -221,7 +228,7 @@ For more information, see [Wiz documentation on service accounts](https://docs.w
         spec:
           containers:
           - name: baton-wiz-win
-            image: ghcr.io/conductorone/baton-wiz-win:latest
+            image: public.ecr.aws/conductorone/baton-wiz-win:latest
             imagePullPolicy: IfNotPresent
             env:
             - name: BATON_HOST_ID
