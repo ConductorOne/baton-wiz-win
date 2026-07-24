@@ -15,12 +15,19 @@ import (
 
 type Connector struct {
 	client wiz.Client
+
+	// syncRoles and syncProjects reflect whether the "role" and "project"
+	// resource types are included in the current sync filter. When either is
+	// false, userBuilder skips emitting the corresponding cross-type grant
+	// (see userBuilder.Grants).
+	syncRoles    bool
+	syncProjects bool
 }
 
 // ResourceSyncers returns a ResourceSyncer for each resource type that should be synced from the upstream service.
 func (c *Connector) ResourceSyncers(ctx context.Context) []connectorbuilder.ResourceSyncerV2 {
 	return []connectorbuilder.ResourceSyncerV2{
-		newUserBuilder(c.client),
+		newUserBuilder(c.client, c.syncRoles, c.syncProjects),
 		newRoleBuilder(c.client),
 		newProjectBuilder(c.client),
 	}
@@ -77,5 +84,18 @@ func New(ctx context.Context,
 		return nil, nil, fmt.Errorf("failed to create Wiz client: %w", err)
 	}
 
-	return &Connector{client: client}, nil, nil
+	// Default to syncing everything when cliOpts is unavailable, matching
+	// WillSyncResourceType's own "no filter set" semantics.
+	syncRoles := true
+	syncProjects := true
+	if cliOpts != nil {
+		syncRoles = cliOpts.WillSyncResourceType(RoleResourceTypeID)
+		syncProjects = cliOpts.WillSyncResourceType(ProjectResourceTypeID)
+	}
+
+	return &Connector{
+		client:       client,
+		syncRoles:    syncRoles,
+		syncProjects: syncProjects,
+	}, nil, nil
 }

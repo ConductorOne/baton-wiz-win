@@ -5,9 +5,17 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 )
 
+// Resource type ID constants, referenced when gating cross-type grant
+// emission against the sync filter (see cli.ConnectorOpts.WillSyncResourceType).
+const (
+	UserResourceTypeID    = "user"
+	RoleResourceTypeID    = "role"
+	ProjectResourceTypeID = "project"
+)
+
 // userResourceType represents Wiz users.
 var userResourceType = &v2.ResourceType{
-	Id:          "user",
+	Id:          UserResourceTypeID,
 	DisplayName: "User",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_USER},
 	Annotations: annotations.New(
@@ -22,7 +30,7 @@ var userResourceType = &v2.ResourceType{
 
 // roleResourceType represents Wiz roles.
 var roleResourceType = &v2.ResourceType{
-	Id:          "role",
+	Id:          RoleResourceTypeID,
 	DisplayName: "Role",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_ROLE},
 	Annotations: annotations.New(
@@ -37,7 +45,7 @@ var roleResourceType = &v2.ResourceType{
 
 // projectResourceType represents Wiz projects/workspaces.
 var projectResourceType = &v2.ResourceType{
-	Id:          "project",
+	Id:          ProjectResourceTypeID,
 	DisplayName: "Project",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
 	Annotations: annotations.New(

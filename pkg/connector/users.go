@@ -12,6 +12,14 @@ import (
 
 type userBuilder struct {
 	client wiz.Client
+
+	// syncRoles and syncProjects gate the cross-type "role" and "project"
+	// grants emitted in Grants(). They are set based on whether the sync
+	// filter (cli.ConnectorOpts.WillSyncResourceType) includes those resource
+	// types at all, avoiding wasted work / dangling grants referencing a type
+	// that isn't part of the sync.
+	syncRoles    bool
+	syncProjects bool
 }
 
 func (u *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
@@ -102,44 +110,52 @@ func (u *userBuilder) Grants(ctx context.Context, res *v2.Resource, attr resourc
 		return grants, nil, nil
 	}
 
-	// Create role grant if role_id is present
-	if roleID, ok := profile.Fields["role_id"]; ok && roleID.GetStringValue() != "" {
-		roleResource, err := resource.NewRoleResource(
-			"", // Name is not needed for grant creation
-			roleResourceType,
-			roleID.GetStringValue(),
-			[]resource.RoleTraitOption{},
-		)
-		if err != nil {
-			return nil, nil, fmt.Errorf("wiz-connector: failed to create role resource: %w", err)
-		}
+	// Create role grant if role_id is present. This is a cross-type grant
+	// (targets the "role" resource type), so only emit it when the sync
+	// filter actually includes roles.
+	if u.syncRoles {
+		if roleID, ok := profile.Fields["role_id"]; ok && roleID.GetStringValue() != "" {
+			roleResource, err := resource.NewRoleResource(
+				"", // Name is not needed for grant creation
+				roleResourceType,
+				roleID.GetStringValue(),
+				[]resource.RoleTraitOption{},
+			)
+			if err != nil {
+				return nil, nil, fmt.Errorf("wiz-connector: failed to create role resource: %w", err)
+			}
 
-		roleGrant := grant.NewGrant(roleResource, "member", res.Id)
-		grants = append(grants, roleGrant)
+			roleGrant := grant.NewGrant(roleResource, "member", res.Id)
+			grants = append(grants, roleGrant)
+		}
 	}
 
-	// Create project grants if project_ids is present
-	if projectIDsValue, ok := profile.Fields["project_ids"]; ok {
-		projectIDsList := projectIDsValue.GetListValue()
-		if projectIDsList != nil {
-			for _, projectIDValue := range projectIDsList.Values {
-				projectID := projectIDValue.GetStringValue()
-				if projectID == "" {
-					continue
-				}
+	// Create project grants if project_ids is present. This is a cross-type
+	// grant (targets the "project" resource type), so only emit it when the
+	// sync filter actually includes projects.
+	if u.syncProjects {
+		if projectIDsValue, ok := profile.Fields["project_ids"]; ok {
+			projectIDsList := projectIDsValue.GetListValue()
+			if projectIDsList != nil {
+				for _, projectIDValue := range projectIDsList.Values {
+					projectID := projectIDValue.GetStringValue()
+					if projectID == "" {
+						continue
+					}
 
-				projectRes, err := resource.NewGroupResource(
-					"", // Name is not needed for grant creation
-					projectResourceType,
-					projectID,
-					[]resource.GroupTraitOption{},
-				)
-				if err != nil {
-					return nil, nil, fmt.Errorf("wiz-connector: failed to create project resource: %w", err)
-				}
+					projectRes, err := resource.NewGroupResource(
+						"", // Name is not needed for grant creation
+						projectResourceType,
+						projectID,
+						[]resource.GroupTraitOption{},
+					)
+					if err != nil {
+						return nil, nil, fmt.Errorf("wiz-connector: failed to create project resource: %w", err)
+					}
 
-				projectGrant := grant.NewGrant(projectRes, "member", res.Id)
-				grants = append(grants, projectGrant)
+					projectGrant := grant.NewGrant(projectRes, "member", res.Id)
+					grants = append(grants, projectGrant)
+				}
 			}
 		}
 	}
@@ -147,6 +163,10 @@ func (u *userBuilder) Grants(ctx context.Context, res *v2.Resource, attr resourc
 	return grants, nil, nil
 }
 
-func newUserBuilder(client wiz.Client) *userBuilder {
-	return &userBuilder{client: client}
+func newUserBuilder(client wiz.Client, syncRoles bool, syncProjects bool) *userBuilder {
+	return &userBuilder{
+		client:       client,
+		syncRoles:    syncRoles,
+		syncProjects: syncProjects,
+	}
 }
