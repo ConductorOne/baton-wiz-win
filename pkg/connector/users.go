@@ -5,25 +5,49 @@ import (
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
+	"google.golang.org/protobuf/proto"
 )
 
 type userBuilder struct {
 	client wiz.Client
 
-	// syncRoles and syncProjects gate the cross-type "role" and "project"
-	// grants emitted in Grants(). They are set based on whether the sync
-	// filter (cli.ConnectorOpts.WillSyncResourceType) includes those resource
-	// types at all, avoiding wasted work / dangling grants referencing a type
-	// that isn't part of the sync.
+	// syncRoles and syncProjects reflect whether the "role" and "project"
+	// resource types are included in the current sync filter
+	// (cli.ConnectorOpts.WillSyncResourceType).
+	//
+	// userBuilder.Grants emits two INDEPENDENT cross-type targets (a role
+	// membership grant and project membership grants) from a single call,
+	// unlike baton-linear#55's single-target (role-only) case. A
+	// resource-type-level SkipEntitlementsAndGrants annotation gates the
+	// entire Grants() call for "user" resources -- it can't selectively
+	// suppress just the role grant while still emitting the project grants,
+	// or vice versa. So responsibility is split:
+	//   - ResourceType() escalates to SkipEntitlementsAndGrants only when
+	//     BOTH are excluded, since Grants() would then emit nothing at all
+	//     and the call can be skipped entirely as a pure optimization.
+	//   - Grants() still gates each cross-type emission individually, which
+	//     remains necessary for correctness whenever exactly one of the two
+	//     is excluded (the SDK-level annotation can't express that case).
 	syncRoles    bool
 	syncProjects bool
 }
 
+// ResourceType returns a clone of the package-level userResourceType,
+// escalating its annotations to SkipEntitlementsAndGrants when neither role
+// nor project grants would be emitted. The shared package-level var is never
+// mutated.
 func (u *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
-	return userResourceType
+	rt := proto.Clone(userResourceType).(*v2.ResourceType)
+	if !u.syncRoles && !u.syncProjects {
+		annos := annotations.Annotations(rt.GetAnnotations())
+		annos.Update(&v2.SkipEntitlementsAndGrants{})
+		rt.Annotations = annos
+	}
+	return rt
 }
 
 // List returns users from Wiz as resource objects, one page at a time.

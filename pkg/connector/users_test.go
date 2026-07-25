@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/stretchr/testify/require"
 )
@@ -90,5 +91,50 @@ func TestUserBuilder_Grants_GatedBySyncFilter(t *testing.T) {
 		grants, _, err := u.Grants(ctx, userRes, resource.SyncOpAttrs{})
 		require.NoError(t, err)
 		require.Empty(t, grants)
+	})
+}
+
+// TestUserBuilder_ResourceType_Annotations asserts the resource-type-level
+// annotation escalation described in userBuilder's syncRoles/syncProjects
+// doc comment: SkipEntitlementsAndGrants is only added when NEITHER cross-type
+// target would be emitted. Whenever at least one of role/project is still
+// being synced, Grants() must still run (gated internally per-target), so the
+// annotation must not escalate in that case.
+func TestUserBuilder_ResourceType_Annotations(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name                          string
+		syncRoles, syncProjects       bool
+		wantSkipEntitlementsAndGrants bool
+	}{
+		{"both synced", true, true, false},
+		{"only roles synced", true, false, false},
+		{"only projects synced", false, true, false},
+		{"neither synced", false, false, true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			u := newUserBuilder(nil, tc.syncRoles, tc.syncProjects)
+			rt := u.ResourceType(ctx)
+
+			annos := annotations.Annotations(rt.GetAnnotations())
+			require.True(t, annos.Contains(&v2.SkipEntitlements{}), "base SkipEntitlements annotation should always be present")
+			require.Equal(t, tc.wantSkipEntitlementsAndGrants, annos.Contains(&v2.SkipEntitlementsAndGrants{}))
+		})
+	}
+
+	t.Run("does not mutate the shared package-level resource type", func(t *testing.T) {
+		before := annotations.Annotations(userResourceType.GetAnnotations())
+		require.False(t, before.Contains(&v2.SkipEntitlementsAndGrants{}))
+
+		u := newUserBuilder(nil, false, false)
+		rt := u.ResourceType(ctx)
+		rtAnnos := annotations.Annotations(rt.GetAnnotations())
+		require.True(t, rtAnnos.Contains(&v2.SkipEntitlementsAndGrants{}))
+
+		after := annotations.Annotations(userResourceType.GetAnnotations())
+		require.False(t, after.Contains(&v2.SkipEntitlementsAndGrants{}), "package-level userResourceType must remain unmodified")
 	})
 }
