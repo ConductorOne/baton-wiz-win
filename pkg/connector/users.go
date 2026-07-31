@@ -65,9 +65,9 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 			user.Email, // Use email as ID for consistency
 			[]resource.UserTraitOption{
 				resource.WithEmail(user.Email, true),
-				resource.WithStatus(v2.UserTrait_Status_STATUS_ENABLED),
-				resource.WithUserProfile(profile),
 			},
+			resource.WithResourceProfile(profile),
+			resource.WithResourceStatus(v2.Status_RESOURCE_STATUS_ENABLED, ""),
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("wiz-connector: failed to create user resource: %w", err)
@@ -95,13 +95,8 @@ func (u *userBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ r
 func (u *userBuilder) Grants(ctx context.Context, res *v2.Resource, attr resource.SyncOpAttrs) ([]*v2.Grant, *resource.SyncOpResults, error) {
 	var grants []*v2.Grant
 
-	// Extract the user trait to get the profile data
-	userTrait, err := resource.GetUserTrait(res)
-	if err != nil {
-		return nil, nil, fmt.Errorf("wiz-connector: failed to get user trait: %w", err)
-	}
-
-	profile := userTrait.GetProfile()
+	// Profile lives on the resource itself (baton-sdk moved it off UserTrait).
+	profile := res.GetProfile()
 	if profile == nil {
 		// No profile data, return empty grants
 		return grants, nil, nil
