@@ -96,7 +96,7 @@ func (u *userBuilder) Grants(ctx context.Context, res *v2.Resource, attr resourc
 	var grants []*v2.Grant
 
 	// Profile lives on the resource itself (baton-sdk moved it off UserTrait).
-	profile := res.GetProfile()
+	profile := resource.GetProfile(res)
 	if profile == nil {
 		// No profile data, return empty grants
 		return grants, nil, nil
