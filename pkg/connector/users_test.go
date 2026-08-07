@@ -27,8 +27,8 @@ func buildTestUserResource(t *testing.T) *v2.Resource {
 		"test@example.com",
 		[]resource.UserTraitOption{
 			resource.WithEmail("test@example.com", true),
-			resource.WithUserProfile(profile),
 		},
+		resource.WithResourceProfile(profile),
 	)
 	require.NoError(t, err)
 
