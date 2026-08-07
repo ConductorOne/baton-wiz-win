@@ -5,17 +5,49 @@ import (
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
+	"google.golang.org/protobuf/proto"
 )
 
 type userBuilder struct {
 	client wiz.Client
+
+	// syncRoles and syncProjects reflect whether the "role" and "project"
+	// resource types are included in the current sync filter
+	// (cli.ConnectorOpts.WillSyncResourceType).
+	//
+	// userBuilder.Grants emits two INDEPENDENT cross-type targets (a role
+	// membership grant and project membership grants) from a single call,
+	// unlike baton-linear#55's single-target (role-only) case. A
+	// resource-type-level SkipEntitlementsAndGrants annotation gates the
+	// entire Grants() call for "user" resources -- it can't selectively
+	// suppress just the role grant while still emitting the project grants,
+	// or vice versa. So responsibility is split:
+	//   - ResourceType() escalates to SkipEntitlementsAndGrants only when
+	//     BOTH are excluded, since Grants() would then emit nothing at all
+	//     and the call can be skipped entirely as a pure optimization.
+	//   - Grants() still gates each cross-type emission individually, which
+	//     remains necessary for correctness whenever exactly one of the two
+	//     is excluded (the SDK-level annotation can't express that case).
+	syncRoles    bool
+	syncProjects bool
 }
 
+// ResourceType returns a clone of the package-level userResourceType,
+// escalating its annotations to SkipEntitlementsAndGrants when neither role
+// nor project grants would be emitted. The shared package-level var is never
+// mutated.
 func (u *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
-	return userResourceType
+	rt := proto.Clone(userResourceType).(*v2.ResourceType)
+	if !u.syncRoles && !u.syncProjects {
+		annos := annotations.Annotations(rt.GetAnnotations())
+		annos.Update(&v2.SkipEntitlementsAndGrants{})
+		rt.Annotations = annos
+	}
+	return rt
 }
 
 // List returns users from Wiz as resource objects, one page at a time.
@@ -102,44 +134,52 @@ func (u *userBuilder) Grants(ctx context.Context, res *v2.Resource, attr resourc
 		return grants, nil, nil
 	}
 
-	// Create role grant if role_id is present
-	if roleID, ok := profile.Fields["role_id"]; ok && roleID.GetStringValue() != "" {
-		roleResource, err := resource.NewRoleResource(
-			"", // Name is not needed for grant creation
-			roleResourceType,
-			roleID.GetStringValue(),
-			[]resource.RoleTraitOption{},
-		)
-		if err != nil {
-			return nil, nil, fmt.Errorf("wiz-connector: failed to create role resource: %w", err)
-		}
+	// Create role grant if role_id is present. This is a cross-type grant
+	// (targets the "role" resource type), so only emit it when the sync
+	// filter actually includes roles.
+	if u.syncRoles {
+		if roleID, ok := profile.Fields["role_id"]; ok && roleID.GetStringValue() != "" {
+			roleResource, err := resource.NewRoleResource(
+				"", // Name is not needed for grant creation
+				roleResourceType,
+				roleID.GetStringValue(),
+				[]resource.RoleTraitOption{},
+			)
+			if err != nil {
+				return nil, nil, fmt.Errorf("wiz-connector: failed to create role resource: %w", err)
+			}
 
-		roleGrant := grant.NewGrant(roleResource, "member", res.Id)
-		grants = append(grants, roleGrant)
+			roleGrant := grant.NewGrant(roleResource, "member", res.Id)
+			grants = append(grants, roleGrant)
+		}
 	}
 
-	// Create project grants if project_ids is present
-	if projectIDsValue, ok := profile.Fields["project_ids"]; ok {
-		projectIDsList := projectIDsValue.GetListValue()
-		if projectIDsList != nil {
-			for _, projectIDValue := range projectIDsList.Values {
-				projectID := projectIDValue.GetStringValue()
-				if projectID == "" {
-					continue
-				}
+	// Create project grants if project_ids is present. This is a cross-type
+	// grant (targets the "project" resource type), so only emit it when the
+	// sync filter actually includes projects.
+	if u.syncProjects {
+		if projectIDsValue, ok := profile.Fields["project_ids"]; ok {
+			projectIDsList := projectIDsValue.GetListValue()
+			if projectIDsList != nil {
+				for _, projectIDValue := range projectIDsList.Values {
+					projectID := projectIDValue.GetStringValue()
+					if projectID == "" {
+						continue
+					}
 
-				projectRes, err := resource.NewGroupResource(
-					"", // Name is not needed for grant creation
-					projectResourceType,
-					projectID,
-					[]resource.GroupTraitOption{},
-				)
-				if err != nil {
-					return nil, nil, fmt.Errorf("wiz-connector: failed to create project resource: %w", err)
-				}
+					projectRes, err := resource.NewGroupResource(
+						"", // Name is not needed for grant creation
+						projectResourceType,
+						projectID,
+						[]resource.GroupTraitOption{},
+					)
+					if err != nil {
+						return nil, nil, fmt.Errorf("wiz-connector: failed to create project resource: %w", err)
+					}
 
-				projectGrant := grant.NewGrant(projectRes, "member", res.Id)
-				grants = append(grants, projectGrant)
+					projectGrant := grant.NewGrant(projectRes, "member", res.Id)
+					grants = append(grants, projectGrant)
+				}
 			}
 		}
 	}
@@ -147,6 +187,10 @@ func (u *userBuilder) Grants(ctx context.Context, res *v2.Resource, attr resourc
 	return grants, nil, nil
 }
 
-func newUserBuilder(client wiz.Client) *userBuilder {
-	return &userBuilder{client: client}
+func newUserBuilder(client wiz.Client, syncRoles bool, syncProjects bool) *userBuilder {
+	return &userBuilder{
+		client:       client,
+		syncRoles:    syncRoles,
+		syncProjects: syncProjects,
+	}
 }
