@@ -83,8 +83,11 @@ type graphQLResponse struct {
 }
 
 type graphQLError struct {
-	Message string        `json:"message"`
-	Path    []interface{} `json:"path,omitempty"`
+	Message    string        `json:"message"`
+	Path       []interface{} `json:"path,omitempty"`
+	Extensions struct {
+		Code string `json:"code,omitempty"`
+	} `json:"extensions,omitempty"`
 }
 
 // Specific response types for each query.

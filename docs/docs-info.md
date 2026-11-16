@@ -8,7 +8,7 @@ While developing the connector, please fill out this form. This information is n
    
    * **Users** - User accounts from the `userAccounts` GraphQL endpoint. Includes user email, name, and ID. Note: The `users` endpoint is not accessible with service account authentication.
    
-   * **Roles** - User roles from the `userRolesV2` GraphQL endpoint. Includes role name, description, scopes, whether it's built-in, and project-scoped status. Note: Role-to-user grant mappings are not available due to API limitations with service accounts.
+   * **Roles** - User roles from the `userRolesV2` GraphQL endpoint. Includes role name, description, scopes, whether it's built-in, and project-scoped status. Role membership grants come from each user's `effectiveRole` on the `users` endpoint.
    
    * **Projects** - Wiz projects/workspaces from the `projects` GraphQL endpoint. Includes project name, description, project owners, and security champions. Creates grants for project owners and security champions (matched by email).
    
@@ -73,20 +73,16 @@ While developing the connector, please fill out this form. This information is n
 
 The connector has the following known limitations due to Wiz API restrictions when using service account authentication:
 
-1. **No Role Grants**: The connector cannot determine which users have which roles because:
-   - The `users` endpoint (which contains `effectiveRole`) is not accessible to service accounts
-   - The `userAccounts` endpoint does not include role information
-   - Therefore, role resources are synced but no grants are created
+1. **Single role per user**: Wiz users hold exactly one role. Granting a role replaces the user's current role, and a held role cannot be revoked, only replaced by granting another.
 
-2. **Limited Project Grants**: The connector can only sync project owners and security champions, not all project members:
-   - The `projects` endpoint only exposes `projectOwners` and `securityChampions` fields
-   - Full project membership data (`effectiveAssignedProjects`) is only available from the `users` endpoint, which is inaccessible to service accounts
-   - This means you can see who owns/champions a project, but not all users who have access to it
+2. **Project assignment needs a project-scoped role**: Project `member` grants change the user's assigned projects, which only apply to users with a project-scoped role. Users with a global role already have access to every project, so the grant is refused for them.
 
-3. **User ID Inconsistency**: Wiz returns different user IDs for the same user across different endpoints:
+3. **SSO-managed users**: For users whose role or projects come from SSO group mapping, provisioning writes a manual override in Wiz. The override replaces the SSO-derived value and persists until changed in Wiz, so later SSO group changes no longer apply to that field.
+
+4. **User ID Inconsistency**: Wiz returns different user IDs for the same user across different endpoints:
    - The connector uses email addresses as the canonical user identifier to work around this
    - Users without email addresses are skipped during sync
 
-4. **IAM-Focused Security Insights**: Security insights are filtered to only include issues affecting user principals (USER_ACCOUNT and SERVICE_ACCOUNT entities):
+5. **IAM-Focused Security Insights**: Security insights are filtered to only include issues affecting user principals (USER_ACCOUNT and SERVICE_ACCOUNT entities):
    - Infrastructure issues (VPCs, buckets, regions, etc.) are excluded
    - This is intentional to focus on identity-related security risks relevant to IAM governance  

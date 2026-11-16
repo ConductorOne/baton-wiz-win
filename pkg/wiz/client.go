@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"golang.org/x/oauth2"
@@ -98,7 +99,7 @@ func (c *client) graphQLRequest(ctx context.Context, query string, variables map
 
 	// Check for GraphQL-specific errors in the response
 	if len(gqlResp.Errors) > 0 {
-		return status.Errorf(codes.Unknown, "graphql errors: %+v", gqlResp.Errors)
+		return &GraphQLError{Code: graphQLErrorCode(gqlResp.Errors), Errors: gqlResp.Errors}
 	}
 
 	return nil
@@ -221,4 +222,36 @@ func (c *client) ListUserRoles(ctx context.Context, cursor *string) (*UserRoleCo
 	}
 
 	return connection, nil
+}
+
+// GraphQLError is an error reported in a GraphQL response body. It carries a
+// gRPC status so callers and the SDK see a classified error.
+type GraphQLError struct {
+	Code   codes.Code
+	Errors []graphQLError
+}
+
+func (e *GraphQLError) Error() string {
+	return fmt.Sprintf("graphql errors: %+v", e.Errors)
+}
+
+func (e *GraphQLError) GRPCStatus() *status.Status {
+	return status.New(e.Code, e.Error())
+}
+
+// graphQLErrorCode classifies a GraphQL error response by the first error's
+// extensions.code, since the HTTP status is 200 and carries no signal.
+func graphQLErrorCode(errs []graphQLError) codes.Code {
+	switch strings.ToUpper(errs[0].Extensions.Code) {
+	case "NOT_FOUND":
+		return codes.NotFound
+	case "FORBIDDEN", "UNAUTHORIZED", "PERMISSION_DENIED":
+		return codes.PermissionDenied
+	case "UNAUTHENTICATED":
+		return codes.Unauthenticated
+	case "BAD_USER_INPUT", "INVALID_INPUT", "GRAPHQL_VALIDATION_FAILED":
+		return codes.InvalidArgument
+	default:
+		return codes.Unknown
+	}
 }

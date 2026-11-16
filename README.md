@@ -75,6 +75,8 @@ baton resources
 - **Projects** (`member`): adds or removes the project from the user's assigned projects. Only users with a project-scoped role can be assigned projects; a global role already covers every project.
 - **Projects** (`owner`, `champion`): adds or removes the user from the project's owners or security champions.
 
+For users whose role or projects come from SSO group mapping, provisioning writes a manual override in Wiz that persists until changed in Wiz.
+
 Account creation and deletion are not supported.
 
 # Contributing, Support and Issues

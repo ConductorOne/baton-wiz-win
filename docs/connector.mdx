@@ -31,6 +31,13 @@ There is also a [Wiz Insights connector](https://www.conductorone.com/docs/baton
 
 {/* AUTO-GENERATED:END - capabilities */}
 
+### Provisioning behavior
+
+- **Roles**: Wiz users hold exactly one role. Granting a role replaces the user's current role. A role the user holds can't be revoked on its own; grant a different role instead.
+- **Project membership**: Granting or revoking project membership changes the user's assigned projects. This applies only to users with a project-scoped role; users with a global role already have access to every project.
+- **Project owners and security champions**: Granting or revoking adds or removes the user from the project's owners or security champions.
+- **SSO-managed users**: If a user's role or projects come from SSO group mapping, provisioning sets a manual override in Wiz that stays in place until it's changed in Wiz.
+
 ## Gather Wiz credentials
 
 <Warning>

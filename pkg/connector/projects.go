@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -222,27 +223,27 @@ func (p *projectBuilder) Revoke(ctx context.Context, g *v2.Grant) (annotations.A
 
 	user, err := resolveUser(ctx, p.client, g.GetPrincipal().GetId(), g.GetPrincipal())
 	if err != nil {
-		if status.Code(err) == codes.NotFound {
+		if errors.Is(err, errUserNotFound) {
 			return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 		}
 		return nil, err
 	}
 
-	var revoked bool
+	var alreadyAbsent bool
 	switch slug {
 	case memberEntitlement:
-		revoked, err = p.removeProjectAssignment(ctx, user, projectID)
+		alreadyAbsent, err = p.removeProjectAssignment(ctx, user, projectID)
 	case ownerEntitlement:
-		revoked, err = p.removeProjectMember(ctx, user, projectID, wiz.ProjectOwnersField)
+		alreadyAbsent, err = p.removeProjectMember(ctx, user, projectID, wiz.ProjectOwnersField)
 	case championEntitlement:
-		revoked, err = p.removeProjectMember(ctx, user, projectID, wiz.SecurityChampionsField)
+		alreadyAbsent, err = p.removeProjectMember(ctx, user, projectID, wiz.SecurityChampionsField)
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "wiz-connector: unsupported project entitlement %q", slug)
 	}
 	if err != nil {
 		return nil, err
 	}
-	if revoked {
+	if alreadyAbsent {
 		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 	}
 	return nil, nil

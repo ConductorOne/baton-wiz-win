@@ -22,6 +22,10 @@ const (
 	profileUserIDKey = "user_id"
 )
 
+// errUserNotFound marks a principal with no Wiz user. Revoke treats it as
+// already revoked; it is a sentinel so transport 404s never match.
+var errUserNotFound = status.Error(codes.NotFound, "user not found")
+
 // resolveUser loads the Wiz user behind a principal. It prefers the native ID
 // recorded in the profile during sync and falls back to an exact email match,
 // which covers principals synced before the ID was recorded.
@@ -53,7 +57,7 @@ func resolveUser(ctx context.Context, client wiz.Client, principal *v2.ResourceI
 		return nil, fmt.Errorf("wiz-connector: failed to look up user by email: %w", err)
 	}
 	if user == nil {
-		return nil, status.Errorf(codes.NotFound, "wiz-connector: no Wiz user found with email %q", email)
+		return nil, fmt.Errorf("wiz-connector: no Wiz user found with email %q: %w", email, errUserNotFound)
 	}
 	return user, nil
 }

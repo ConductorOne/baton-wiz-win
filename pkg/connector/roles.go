@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -112,8 +113,16 @@ func (r *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 	unlock := r.client.LockObject("user:" + user.ID)
 	defer unlock()
 
+	current, err := r.client.GetUser(ctx, user.ID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("wiz-connector: failed to get user %q: %w", user.ID, err)
+	}
+	if current == nil {
+		return nil, nil, status.Errorf(codes.NotFound, "wiz-connector: user %q no longer exists", user.ID)
+	}
+
 	g := grant.NewGrant(entitlement.GetResource(), memberEntitlement, principal.GetId())
-	if user.EffectiveRole.ID == roleID {
+	if current.EffectiveRole.ID == roleID {
 		return []*v2.Grant{g}, annotations.New(&v2.GrantAlreadyExists{}), nil
 	}
 
@@ -128,6 +137,9 @@ func (r *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 // role, so a held role can only be replaced by granting a different one;
 // revoking a role the user no longer holds succeeds as already revoked.
 func (r *roleBuilder) Revoke(ctx context.Context, g *v2.Grant) (annotations.Annotations, error) {
+	if slug := entitlementSlug(g.GetEntitlement()); slug != memberEntitlement {
+		return nil, status.Errorf(codes.InvalidArgument, "wiz-connector: unsupported role entitlement %q", slug)
+	}
 	roleID := g.GetEntitlement().GetResource().GetId().GetResource()
 	if roleID == "" {
 		return nil, status.Error(codes.InvalidArgument, "wiz-connector: grant has no role ID")
@@ -135,7 +147,7 @@ func (r *roleBuilder) Revoke(ctx context.Context, g *v2.Grant) (annotations.Anno
 
 	user, err := resolveUser(ctx, r.client, g.GetPrincipal().GetId(), g.GetPrincipal())
 	if err != nil {
-		if status.Code(err) == codes.NotFound {
+		if errors.Is(err, errUserNotFound) {
 			return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 		}
 		return nil, err

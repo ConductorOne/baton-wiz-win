@@ -2,9 +2,12 @@ package wiz
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
+
+	"google.golang.org/grpc/codes"
 )
 
 // UserRoleDetail is a role reference that also carries its scoping, which
@@ -48,6 +51,9 @@ func (c *client) GetUser(ctx context.Context, userID string) (*UserDetail, error
 		User *UserDetail `json:"user"`
 	}
 	if err := c.graphQLRequest(ctx, query, map[string]interface{}{"id": userID}, &result); err != nil {
+		if isGraphQLNotFound(err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 	return result.User, nil
@@ -178,6 +184,9 @@ func (c *client) GetProject(ctx context.Context, projectID string) (*ProjectDeta
 		Project *ProjectDetail `json:"project"`
 	}
 	if err := c.graphQLRequest(ctx, query, map[string]interface{}{"id": projectID}, &result); err != nil {
+		if isGraphQLNotFound(err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("failed to get project: %w", err)
 	}
 	return result.Project, nil
@@ -218,6 +227,14 @@ func (c *client) UpdateProjectMembers(ctx context.Context, projectID string, fie
 		return fmt.Errorf("failed to update project %s: %w", field, err)
 	}
 	return nil
+}
+
+// isGraphQLNotFound reports whether Wiz answered with a GraphQL NOT_FOUND
+// error. Transport errors such as an HTTP 404 from a wrong API URL also map to
+// codes.NotFound, so the check is on the error type, not the status code.
+func isGraphQLNotFound(err error) bool {
+	var gqlErr *GraphQLError
+	return errors.As(err, &gqlErr) && gqlErr.Code == codes.NotFound
 }
 
 // keyedLocker serializes read-modify-write updates per Wiz object. The
