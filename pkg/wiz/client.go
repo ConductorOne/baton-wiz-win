@@ -18,12 +18,21 @@ type Client interface {
 	ListUsers(ctx context.Context, cursor *string) (*UserConnection, error)
 	ListProjects(ctx context.Context, cursor *string) (*ProjectConnection, error)
 	ListUserRoles(ctx context.Context, cursor *string) (*UserRoleConnection, error)
+
+	GetUser(ctx context.Context, userID string) (*UserDetail, error)
+	FindUserByEmail(ctx context.Context, email string) (*UserDetail, error)
+	UpdateUserRole(ctx context.Context, userID, roleID string) error
+	UpdateUserProjects(ctx context.Context, userID string, projectIDs []string) error
+	GetProject(ctx context.Context, projectID string) (*ProjectDetail, error)
+	UpdateProjectMembers(ctx context.Context, projectID string, field ProjectMemberField, userIDs []string) error
+	LockObject(key string) func()
 }
 
 // client implements the Client interface.
 type client struct {
 	wrapper *uhttp.BaseHttpClient
 	apiURL  string
+	locker  keyedLocker
 }
 
 // NewClient creates a new Wiz API client with OAuth2 authentication.

@@ -12,6 +12,8 @@ Check out [Baton](https://github.com/conductorone/baton) to learn more the proje
 - **OAuth2 Credentials**: Create an OAuth2 client in Wiz with the following permissions:
   - `read:users` - To sync user information
   - `read:projects` - To sync project/workspace information
+  - `write:users` - To provision roles and project membership (provisioning only)
+  - `write:projects` - To provision project owners and security champions (provisioning only)
 - **API Endpoints**: You'll need both the GraphQL API URL and the OAuth2 token endpoint for your Wiz region
 
 # Getting Started
@@ -67,7 +69,13 @@ baton resources
 - **Roles**: Wiz permission levels (Admin, Editor, Viewer, etc.) with member entitlements
 - **Projects**: Wiz projects/workspaces with membership entitlements
 
-`baton-wiz-win` does not currently support account provisioning or entitlement provisioning.
+`baton-wiz-win` supports entitlement provisioning (run with `--provisioning`):
+
+- **Roles** (`member`): granting a role sets the user's Wiz role. Wiz users hold exactly one role, so the grant replaces the previous role. Revoking a role the user still holds fails; grant a different role instead.
+- **Projects** (`member`): adds or removes the project from the user's assigned projects. Only users with a project-scoped role can be assigned projects; a global role already covers every project.
+- **Projects** (`owner`, `champion`): adds or removes the user from the project's owners or security champions.
+
+Account creation and deletion are not supported.
 
 # Contributing, Support and Issues
 

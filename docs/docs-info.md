@@ -16,7 +16,7 @@ While developing the connector, please fill out this form. This information is n
 
 2. Can the connector provision any resources? If so, which ones? 
 
-   No, the connector does not support provisioning. It is read-only.
+   Yes. The connector provisions role membership (`member` on a role: sets the user's single Wiz role, replacing the previous one; a held role cannot be revoked, only replaced) and project access (`member` adds or removes the project from a project-scoped user's assigned projects; `owner` and `champion` add or remove the user from the project's owners or security champions). It does not create or delete accounts.
 
 ## Connector credentials 
 
@@ -58,7 +58,7 @@ While developing the connector, please fill out this form. This information is n
    
    **Is the list of scopes or permissions different to sync (read) versus provision (read-write)?**
    
-   No, the connector is read-only and does not support provisioning. Only read permissions are needed.
+   Yes. Sync needs only the read permissions above. Provisioning also needs `write:users` (role and project-member assignment) and `write:projects` (project owners and security champions).
    
    **What level of access or permissions does the user need in order to create the credentials?**
    

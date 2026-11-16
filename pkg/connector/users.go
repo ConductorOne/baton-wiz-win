@@ -75,6 +75,9 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		// Store role ID and project IDs in profile for use in Grants()
 		// This avoids having to query all users again when generating grants
 		profile := make(map[string]interface{})
+		if user.ID != "" {
+			profile[profileUserIDKey] = user.ID
+		}
 		if user.EffectiveRole.ID != "" {
 			profile["role_id"] = user.EffectiveRole.ID
 		}
