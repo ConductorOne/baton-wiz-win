@@ -74,6 +74,14 @@ func TestGraphQLErrorsAreClassified(t *testing.T) {
 	require.Equal(t, codes.PermissionDenied, status.Code(err))
 }
 
+func TestGraphQLTransientErrorsAreRetryable(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, _ gqlRequest) {
+		_, _ = w.Write([]byte(`{"data":null,"errors":[{"message":"slow down","extensions":{"code":"RATE_LIMIT_EXCEEDED"}}]}`))
+	})
+	err := c.UpdateUserRole(context.Background(), "u1", "GLOBAL_ADMIN")
+	require.Equal(t, codes.Unavailable, status.Code(err))
+}
+
 func TestFindUserByEmailMatchesExactlyAcrossPages(t *testing.T) {
 	calls := 0
 	c := newTestClient(t, func(w http.ResponseWriter, req gqlRequest) {

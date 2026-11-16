@@ -251,6 +251,9 @@ func graphQLErrorCode(errs []graphQLError) codes.Code {
 		return codes.Unauthenticated
 	case "BAD_USER_INPUT", "INVALID_INPUT", "GRAPHQL_VALIDATION_FAILED":
 		return codes.InvalidArgument
+	case "RATE_LIMIT_EXCEEDED", "RATE_LIMITED", "TOO_MANY_REQUESTS", "SERVICE_UNAVAILABLE", "INTERNAL_SERVER_ERROR", "TIMEOUT":
+		// Retryable: every mutation here sets a full value, so a retry cannot double-apply.
+		return codes.Unavailable
 	default:
 		return codes.Unknown
 	}
