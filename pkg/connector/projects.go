@@ -320,12 +320,15 @@ func (p *projectBuilder) addProjectMember(ctx context.Context, user *wiz.UserDet
 		return false, status.Errorf(codes.NotFound, "wiz-connector: project %q not found", projectID)
 	}
 
-	ids, found := memberIDs(projectMembers(project, field), user)
+	others, found, err := memberIDs(projectMembers(project, field), user)
+	if err != nil {
+		return false, err
+	}
 	if found {
 		return true, nil
 	}
 
-	if err := p.client.UpdateProjectMembers(ctx, projectID, field, append(ids, user.ID)); err != nil {
+	if err := p.client.UpdateProjectMembers(ctx, projectID, field, append(others, user.ID)); err != nil {
 		return false, fmt.Errorf("wiz-connector: failed to add user %q to project %q: %w", user.ID, projectID, err)
 	}
 	return false, nil
@@ -345,12 +348,15 @@ func (p *projectBuilder) removeProjectMember(ctx context.Context, user *wiz.User
 		return true, nil
 	}
 
-	members := projectMembers(project, field)
-	if _, found := memberIDs(members, user); !found {
+	others, found, err := memberIDs(projectMembers(project, field), user)
+	if err != nil {
+		return false, err
+	}
+	if !found {
 		return true, nil
 	}
 
-	if err := p.client.UpdateProjectMembers(ctx, projectID, field, removeMember(members, user)); err != nil {
+	if err := p.client.UpdateProjectMembers(ctx, projectID, field, others); err != nil {
 		return false, fmt.Errorf("wiz-connector: failed to remove user %q from project %q: %w", user.ID, projectID, err)
 	}
 	return false, nil

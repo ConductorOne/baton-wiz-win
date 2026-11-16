@@ -102,27 +102,26 @@ func removeString(list []string, v string) []string {
 	return out
 }
 
+func isSameMember(m wiz.ProjectMember, user *wiz.UserDetail) bool {
+	return (m.ID != "" && m.ID == user.ID) || (m.Email != "" && strings.EqualFold(m.Email, user.Email))
+}
+
 // memberIDs returns the member IDs of a project list and whether the user is
 // already in it. A member matches on Wiz user ID or, failing that, email.
-func memberIDs(members []wiz.ProjectMember, user *wiz.UserDetail) ([]string, bool) {
+// The update replaces the whole list, so a member without an ID is an error
+// rather than being sent as "" or silently dropped.
+func memberIDs(members []wiz.ProjectMember, user *wiz.UserDetail) ([]string, bool, error) {
 	ids := make([]string, 0, len(members))
 	found := false
 	for _, m := range members {
-		if m.ID == user.ID || (m.Email != "" && strings.EqualFold(m.Email, user.Email)) {
+		if isSameMember(m, user) {
 			found = true
-		}
-		ids = append(ids, m.ID)
-	}
-	return ids, found
-}
-
-func removeMember(members []wiz.ProjectMember, user *wiz.UserDetail) []string {
-	ids := make([]string, 0, len(members))
-	for _, m := range members {
-		if m.ID == user.ID || (m.Email != "" && strings.EqualFold(m.Email, user.Email)) {
 			continue
 		}
+		if m.ID == "" {
+			return nil, false, status.Errorf(codes.FailedPrecondition, "wiz-connector: project member %q has no user ID", m.Email)
+		}
 		ids = append(ids, m.ID)
 	}
-	return ids
+	return ids, found, nil
 }

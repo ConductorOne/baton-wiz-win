@@ -268,6 +268,18 @@ func TestProjectOwnerAndChampionGrantAndRevoke(t *testing.T) {
 	}
 }
 
+func TestProjectOwnerGrantRejectsMemberWithoutID(t *testing.T) {
+	ctx := context.Background()
+	f := newFakeWizClient()
+	f.users["u1"] = &wiz.UserDetail{ID: "u1", Email: "a@example.com"}
+	f.projects["p1"] = &wiz.ProjectDetail{ID: "p1", ProjectOwners: []wiz.ProjectMember{{Email: "other@example.com"}}}
+	p := newProjectBuilder(f)
+
+	_, _, err := p.Grant(ctx, testPrincipal(t, "a@example.com", "u1"), testEntitlement(t, projectResourceType, "p1", ownerEntitlement))
+	require.Equal(t, codes.FailedPrecondition, status.Code(err))
+	require.Empty(t, f.memberUpdates, "a list with an unaddressable member must not be replaced")
+}
+
 func TestProvisioningRejectsNonUserPrincipal(t *testing.T) {
 	ctx := context.Background()
 	p := newProjectBuilder(newFakeWizClient())
