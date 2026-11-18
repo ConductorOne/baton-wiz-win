@@ -122,11 +122,9 @@ func testEntitlement(t *testing.T, rt *v2.ResourceType, resourceID, slug string)
 	return &v2.Entitlement{Id: rt.Id + ":" + resourceID + ":" + slug, Resource: r, Slug: slug}
 }
 
-
 func revokeGrant(principal *v2.Resource, e *v2.Entitlement) *v2.Grant {
 	return &v2.Grant{Entitlement: e, Principal: principal}
 }
-
 
 func TestUserListSetsWizUserExternalID(t *testing.T) {
 	f := newFakeClient()
