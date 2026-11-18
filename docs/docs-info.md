@@ -16,7 +16,11 @@ While developing the connector, please fill out this form. This information is n
 
 2. Can the connector provision any resources? If so, which ones? 
 
-   No, the connector does not support provisioning. It is read-only.
+   Yes, entitlements only (no account provisioning):
+
+   * **Role member** - Grant sets the user's role (`updateUser` patch `role`), replacing the current one. Revoking a held role is refused because every Wiz user must hold a role; a role the user no longer holds revokes as already revoked.
+   * **Project member** - Grant/revoke adds or removes the project from the user's assigned projects (`updateUser` patch `assignedProjectIds`). Refused for users with a global role.
+   * **Project owner / security champion** - Grant/revoke adds or removes the user from `projectOwners` / `securityChampions` (`updateProject`).
 
 ## Connector credentials 
 
@@ -58,7 +62,7 @@ While developing the connector, please fill out this form. This information is n
    
    **Is the list of scopes or permissions different to sync (read) versus provision (read-write)?**
    
-   No, the connector is read-only and does not support provisioning. Only read permissions are needed.
+   Yes. Sync needs only read permissions. Provisioning also needs `write:users` (roles and project membership) and `write:projects` (project owners and security champions).
    
    **What level of access or permissions does the user need in order to create the credentials?**
    

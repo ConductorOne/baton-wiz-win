@@ -12,6 +12,8 @@ Check out [Baton](https://github.com/conductorone/baton) to learn more the proje
 - **OAuth2 Credentials**: Create an OAuth2 client in Wiz with the following permissions:
   - `read:users` - To sync user information
   - `read:projects` - To sync project/workspace information
+  - `write:users` - Only for provisioning: to assign roles and project membership
+  - `write:projects` - Only for provisioning: to assign project owners and security champions
 - **API Endpoints**: You'll need both the GraphQL API URL and the OAuth2 token endpoint for your Wiz region
 
 # Getting Started
@@ -67,7 +69,17 @@ baton resources
 - **Roles**: Wiz permission levels (Admin, Editor, Viewer, etc.) with member entitlements
 - **Projects**: Wiz projects/workspaces with membership entitlements
 
-`baton-wiz-win` does not currently support account provisioning or entitlement provisioning.
+`baton-wiz-win` supports entitlement provisioning (run with `--provisioning`):
+
+| Entitlement | Grant | Revoke |
+| --- | --- | --- |
+| `role:<id>:member` | Sets the user's role. Wiz users hold exactly one role, so this replaces the current one. | A role the user no longer holds is already revoked. A held role is refused, because every Wiz user must hold a role; grant a different role instead. |
+| `project:<id>:member` | Adds the project to the user's assigned projects. Refused for users with a global role, which already covers every project. | Removes the project from the user's assigned projects. |
+| `project:<id>:owner` / `project:<id>:champion` | Adds the user to the project's owners / security champions. | Removes the user from that list. |
+
+Users keep their email as the resource ID. Provisioning addresses them by the stable Wiz user ID recorded during sync; a user synced by an older version is matched by exact email until the next sync. If a user's role or projects come from SSO group mapping, provisioning sets a manual override in Wiz that stays until it's changed in Wiz.
+
+`baton-wiz-win` does not support account provisioning.
 
 # Contributing, Support and Issues
 

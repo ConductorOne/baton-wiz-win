@@ -5,9 +5,13 @@ import (
 	"fmt"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/annotations"
 	ent "github.com/conductorone/baton-sdk/pkg/types/entitlement"
+	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/conductorone/baton-wiz-win/pkg/wiz"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type roleBuilder struct {
@@ -65,9 +69,9 @@ func (r *roleBuilder) StaticEntitlements(ctx context.Context, _ resource.SyncOpA
 		entitlements,
 		ent.NewAssignmentEntitlement(
 			nil,
-			"member",
+			memberEntitlement,
 			ent.WithDisplayName("Role Member"),
-			ent.WithDescription("Member of a Wiz role"),
+			ent.WithDescription("Has this Wiz role. Each Wiz user has exactly one role: granting replaces the current role, and a held role can't be revoked, only replaced."),
 			ent.WithGrantableTo(userResourceType),
 		),
 	)
@@ -86,6 +90,75 @@ func (r *roleBuilder) Entitlements(ctx context.Context, res *v2.Resource, _ reso
 // See users.go Grants() method.
 func (r *roleBuilder) Grants(ctx context.Context, res *v2.Resource, attr resource.SyncOpAttrs) ([]*v2.Grant, *resource.SyncOpResults, error) {
 	return nil, nil, nil
+}
+
+// Grant assigns the role to the user. Wiz users hold exactly one role, so
+// this replaces the user's current role; the old role grant drops out on the
+// next sync.
+func (r *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {
+	if slug := entitlementSlug(entitlement); slug != memberEntitlement {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "wiz-connector: unsupported role entitlement %q", slug)
+	}
+	roleID := entitlement.GetResource().GetId().GetResource()
+	if roleID == "" {
+		return nil, nil, status.Error(codes.InvalidArgument, "wiz-connector: entitlement has no role ID")
+	}
+
+	user, err := resolveWizUser(ctx, r.client, principal)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	unlock := r.client.LockObject("user:" + user.ID)
+	defer unlock()
+
+	// Re-read under the lock so the already-granted check is current.
+	current, err := r.client.GetUser(ctx, user.ID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("wiz-connector: failed to get user %q: %w", user.ID, err)
+	}
+	if current == nil {
+		return nil, nil, status.Errorf(codes.NotFound, "wiz-connector: user %q no longer exists", user.ID)
+	}
+
+	g := grant.NewGrant(entitlement.GetResource(), memberEntitlement, principal.GetId())
+	if current.EffectiveRole.ID == roleID {
+		return []*v2.Grant{g}, annotations.New(&v2.GrantAlreadyExists{}), nil
+	}
+
+	if err := r.client.UpdateUserRole(ctx, current.ID, roleID); err != nil {
+		return nil, nil, fmt.Errorf("wiz-connector: failed to assign role %q to user %q: %w", roleID, current.ID, err)
+	}
+	return []*v2.Grant{g}, nil, nil
+}
+
+// Revoke removes the role from the user. Wiz requires every user to hold a
+// role, so a held role can only be replaced by granting a different one; a
+// role the user no longer holds revokes as already revoked.
+func (r *roleBuilder) Revoke(ctx context.Context, g *v2.Grant) (annotations.Annotations, error) {
+	if slug := entitlementSlug(g.GetEntitlement()); slug != memberEntitlement {
+		return nil, status.Errorf(codes.InvalidArgument, "wiz-connector: unsupported role entitlement %q", slug)
+	}
+	roleID := g.GetEntitlement().GetResource().GetId().GetResource()
+	if roleID == "" {
+		return nil, status.Error(codes.InvalidArgument, "wiz-connector: grant has no role ID")
+	}
+
+	user, err := resolveWizUser(ctx, r.client, g.GetPrincipal())
+	if err != nil {
+		if isUserNotFound(err) {
+			return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+		}
+		return nil, err
+	}
+
+	if user.EffectiveRole.ID != roleID {
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+	}
+
+	return nil, status.Errorf(codes.FailedPrecondition,
+		"wiz-connector: every Wiz user must hold a role, so role %q cannot be removed from user %q; grant the user a different role instead",
+		roleID, user.Email)
 }
 
 func newRoleBuilder(client wiz.Client) *roleBuilder {
