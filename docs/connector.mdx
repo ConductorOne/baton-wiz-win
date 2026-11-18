@@ -26,10 +26,17 @@ There is also a [Wiz Insights connector](https://www.conductorone.com/docs/baton
 | Resource | Sync | Provision |
 | :--- | :--- | :--- |
 | Accounts | <Icon icon="square-check" iconType="solid" color="#c937ae"/> | |
-| Projects | <Icon icon="square-check" iconType="solid" color="#c937ae"/> | |
-| Roles | <Icon icon="square-check" iconType="solid" color="#c937ae"/> | |
+| Projects | <Icon icon="square-check" iconType="solid" color="#c937ae"/> | <Icon icon="square-check" iconType="solid" color="#c937ae"/> |
+| Roles | <Icon icon="square-check" iconType="solid" color="#c937ae"/> | <Icon icon="square-check" iconType="solid" color="#c937ae"/> |
 
 {/* AUTO-GENERATED:END - capabilities */}
+
+### Provisioning behavior
+
+- **Roles**: Wiz users hold exactly one role. Granting a role replaces the user's current role. A role the user holds can't be revoked on its own; grant a different role instead.
+- **Project membership**: Granting or revoking project membership changes the user's assigned projects. This applies only to users with a project-scoped role; users with a global role already have access to every project. A user given a project-scoped role has no project access until projects are granted.
+- **Project owners and security champions**: Granting or revoking adds or removes the user from the project's owners or security champions.
+- **SSO-managed users**: If a user's role or projects come from SSO group mapping, provisioning sets a manual override in Wiz that stays in place until it's changed in Wiz.
 
 ## Gather Wiz credentials
 
@@ -47,6 +54,8 @@ To configure the Wiz connector, you need administrator permissions in Wiz to cre
 
     - `read:users` - Syncs user accounts and role assignments
     - `read:projects` - Syncs project membership
+    - `write:users` - Optional, for provisioning: assigns roles and project membership
+    - `write:projects` - Optional, for provisioning: assigns project owners and security champions
   </Step>
 
   <Step>

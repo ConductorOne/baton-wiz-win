@@ -18,12 +18,23 @@ type Client interface {
 	ListUsers(ctx context.Context, cursor *string) (*UserConnection, error)
 	ListProjects(ctx context.Context, cursor *string) (*ProjectConnection, error)
 	ListUserRoles(ctx context.Context, cursor *string) (*UserRoleConnection, error)
+
+	// Provisioning. These use classified GraphQL errors (see GraphQLError);
+	// the sync methods above are unchanged.
+	GetUser(ctx context.Context, userID string) (*User, error)
+	FindUserByEmail(ctx context.Context, email string) (*User, error)
+	UpdateUserRole(ctx context.Context, userID, roleID string) error
+	UpdateUserProjects(ctx context.Context, userID string, projectIDs []string) error
+	GetProject(ctx context.Context, projectID string) (*Project, error)
+	UpdateProjectMembers(ctx context.Context, projectID string, field ProjectMemberField, userIDs []string) error
+	LockObject(key string) func()
 }
 
 // client implements the Client interface.
 type client struct {
 	wrapper *uhttp.BaseHttpClient
 	apiURL  string
+	locker  keyedLocker
 }
 
 // NewClient creates a new Wiz API client with OAuth2 authentication.
@@ -57,7 +68,21 @@ func NewClient(ctx context.Context, apiURL, clientID, clientSecret, authEndpoint
 
 // graphQLRequest makes a GraphQL request to the Wiz API using baton-sdk's HTTP wrapper.
 // The wrapper handles retries, rate limiting, and error wrapping automatically.
+// GraphQL errors are reported as codes.Unknown; sync paths rely on this.
 func (c *client) graphQLRequest(ctx context.Context, query string, variables map[string]interface{}, result interface{}) error {
+	gqlErrs, err := c.doGraphQL(ctx, query, variables, result)
+	if err != nil {
+		return err
+	}
+	if len(gqlErrs) > 0 {
+		return status.Errorf(codes.Unknown, "graphql errors: %+v", gqlErrs)
+	}
+	return nil
+}
+
+// doGraphQL posts a GraphQL query, decodes its data into result and returns
+// any GraphQL errors from the response body.
+func (c *client) doGraphQL(ctx context.Context, query string, variables map[string]interface{}, result interface{}) ([]graphQLError, error) {
 	requestBody := map[string]interface{}{
 		"query":     query,
 		"variables": variables,
@@ -66,12 +91,12 @@ func (c *client) graphQLRequest(ctx context.Context, query string, variables map
 	// Parse the API URL
 	parsedURL, err := url.Parse(c.apiURL)
 	if err != nil {
-		return fmt.Errorf("failed to parse API URL: %w", err)
+		return nil, fmt.Errorf("failed to parse API URL: %w", err)
 	}
 
 	req, err := c.wrapper.NewRequest(ctx, http.MethodPost, parsedURL, uhttp.WithJSONBody(requestBody))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Use a temporary struct to capture the GraphQL response envelope
@@ -80,19 +105,18 @@ func (c *client) graphQLRequest(ctx context.Context, query string, variables map
 
 	// Execute the request with JSON response handling
 	resp, err := c.wrapper.Do(req, uhttp.WithJSONResponse(&gqlResp))
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}
-
-	// Check for GraphQL-specific errors in the response
-	if len(gqlResp.Errors) > 0 {
-		return status.Errorf(codes.Unknown, "graphql errors: %+v", gqlResp.Errors)
+	if err != nil {
+		// Keep the GraphQL error text from non-2xx responses for debugging.
+		if len(gqlResp.Errors) > 0 {
+			return nil, fmt.Errorf("failed to execute request: %w: %+v", err, gqlResp.Errors)
+		}
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 
-	return nil
+	return gqlResp.Errors, nil
 }
 
 // ListUsers retrieves a paginated list of users from Wiz.

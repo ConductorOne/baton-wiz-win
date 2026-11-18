@@ -36,7 +36,8 @@ var roleResourceType = &v2.ResourceType{
 	Annotations: annotations.New(
 		&v2.CapabilityPermissions{
 			Permissions: []*v2.CapabilityPermission{
-				{Permission: "read:users"}, // Required for fetching user-to-role memberships
+				{Permission: "read:users"},  // Required for fetching user-to-role memberships
+				{Permission: "write:users"}, // Required to assign roles
 			},
 		},
 		&v2.SkipEntitlements{},
@@ -52,6 +53,8 @@ var projectResourceType = &v2.ResourceType{
 		&v2.CapabilityPermissions{
 			Permissions: []*v2.CapabilityPermission{
 				{Permission: "read:projects"},
+				{Permission: "write:users"},    // Required to assign project members
+				{Permission: "write:projects"}, // Required to assign project owners and security champions
 			},
 		},
 		&v2.SkipEntitlements{},

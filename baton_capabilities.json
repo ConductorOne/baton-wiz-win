@@ -14,6 +14,12 @@
             "permissions": [
               {
                 "permission": "read:projects"
+              },
+              {
+                "permission": "write:users"
+              },
+              {
+                "permission": "write:projects"
               }
             ]
           },
@@ -23,12 +29,19 @@
         ]
       },
       "capabilities": [
-        "CAPABILITY_SYNC"
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
       ],
       "permissions": {
         "permissions": [
           {
             "permission": "read:projects"
+          },
+          {
+            "permission": "write:users"
+          },
+          {
+            "permission": "write:projects"
           }
         ]
       }
@@ -46,6 +59,9 @@
             "permissions": [
               {
                 "permission": "read:users"
+              },
+              {
+                "permission": "write:users"
               }
             ]
           },
@@ -55,12 +71,16 @@
         ]
       },
       "capabilities": [
-        "CAPABILITY_SYNC"
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
       ],
       "permissions": {
         "permissions": [
           {
             "permission": "read:users"
+          },
+          {
+            "permission": "write:users"
           }
         ]
       }
@@ -99,6 +119,7 @@
     }
   ],
   "connectorCapabilities": [
+    "CAPABILITY_PROVISION",
     "CAPABILITY_SYNC"
   ],
   "credentialDetails": {}
