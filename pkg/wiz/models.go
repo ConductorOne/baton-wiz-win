@@ -8,8 +8,9 @@ type PageInfo struct {
 
 // UserRoleRef represents a reference to a user's role.
 type UserRoleRef struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	IsProjectScoped bool   `json:"isProjectScoped"`
 }
 
 // ProjectRef represents a reference to a project assigned to a user.
@@ -83,8 +84,11 @@ type graphQLResponse struct {
 }
 
 type graphQLError struct {
-	Message string        `json:"message"`
-	Path    []interface{} `json:"path,omitempty"`
+	Message    string        `json:"message"`
+	Path       []interface{} `json:"path,omitempty"`
+	Extensions struct {
+		Code string `json:"code,omitempty"`
+	} `json:"extensions,omitempty"`
 }
 
 // Specific response types for each query.

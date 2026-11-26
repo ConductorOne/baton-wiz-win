@@ -75,6 +75,9 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		// Store role ID and project IDs in profile for use in Grants()
 		// This avoids having to query all users again when generating grants
 		profile := make(map[string]interface{})
+		if user.ID != "" {
+			profile[profileUserIDKey] = user.ID
+		}
 		if user.EffectiveRole.ID != "" {
 			profile["role_id"] = user.EffectiveRole.ID
 		}
@@ -100,6 +103,8 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 			},
 			resource.WithResourceProfile(profile),
 			resource.WithResourceStatus(v2.Status_RESOURCE_STATUS_ENABLED, ""),
+			// The stable Wiz user ID, used by Grant/Revoke to address the user.
+			resource.WithExternalID(&v2.ExternalId{Id: user.ID}),
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("wiz-connector: failed to create user resource: %w", err)
@@ -108,13 +113,12 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		users = append(users, userResource)
 	}
 
-	// Prepare the sync results with next page token if there are more pages
-	syncResults := &resource.SyncOpResults{}
-	if resp.PageInfo.HasNextPage {
-		syncResults.NextPageToken = resp.PageInfo.EndCursor
+	next, err := wiz.NextPageToken(resp.PageInfo)
+	if err != nil {
+		return nil, nil, fmt.Errorf("wiz-connector: failed to list users: %w", err)
 	}
 
-	return users, syncResults, nil
+	return users, &resource.SyncOpResults{NextPageToken: next}, nil
 }
 
 // Entitlements returns an empty slice for users as they don't have child entitlements.
